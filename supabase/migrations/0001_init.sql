@@ -112,16 +112,6 @@ begin
     return;
   end if;
 
-  -- Verify batch is open
-  if not exists (
-    select 1 from teams t
-    join batches b on b.id = t.batch_id
-    where t.id = p_team_id and b.is_open = true
-  ) then
-    return query select false, 'Selection is not open for your batch';
-    return;
-  end if;
-
   -- Lock the project row first
   update projects
   set status = 'locked', locked_by_team_id = p_team_id, locked_at = now()

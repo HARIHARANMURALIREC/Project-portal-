@@ -1,15 +1,33 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Copy .env.example to .env and fill in values.',
-  )
+function isValidSupabaseUrl(url: string | undefined): url is string {
+  if (!url) return false
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+  } catch {
+    return false
+  }
 }
 
-export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '')
+export const isSupabaseConfigured =
+  isValidSupabaseUrl(supabaseUrl) && Boolean(supabaseAnonKey && supabaseAnonKey.length > 20)
+
+export const supabaseConfigError = isSupabaseConfigured
+  ? null
+  : 'Supabase is not configured. On Vercel, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY under Project → Settings → Environment Variables, then redeploy.'
+
+if (!isSupabaseConfigured) {
+  console.error(supabaseConfigError)
+}
+
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
+  isSupabaseConfigured ? supabaseAnonKey! : 'placeholder-anon-key',
+)
 
 export const STUDENT_EMAIL_DOMAIN = '@student.portal'
 export const TEACHER_EMAIL_DOMAIN = '@teacher.portal'

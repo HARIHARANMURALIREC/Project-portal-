@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { supabase, resolveLoginEmail } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured, supabaseConfigError, resolveLoginEmail } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { AppLogo } from '@/components/AppLogo'
 import { Button } from '@/components/ui/Button'
@@ -39,6 +39,11 @@ export function LoginPage() {
   }, [profile, loading, navigate])
 
   async function onSubmit(data: LoginForm) {
+    if (!isSupabaseConfigured) {
+      toast.error(supabaseConfigError ?? 'Supabase is not configured.')
+      return
+    }
+
     let email: string
     try {
       email = resolveLoginEmail(data.identifier)
@@ -89,6 +94,12 @@ export function LoginPage() {
               <p className="mt-1 text-sm text-slate-500">Sign in to continue</p>
             </div>
 
+            {!isSupabaseConfigured && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs text-amber-900">
+                {supabaseConfigError}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Input
                 label="Email or Registration No."
@@ -107,7 +118,13 @@ export function LoginPage() {
                 {...register('password')}
               />
 
-              <Button type="submit" fullWidth size="lg" disabled={isSubmitting} className="mt-2">
+              <Button
+                type="submit"
+                fullWidth
+                size="lg"
+                disabled={isSubmitting || !isSupabaseConfigured}
+                className="mt-2"
+              >
                 {isSubmitting ? 'Signing in…' : 'Sign in'}
               </Button>
             </form>

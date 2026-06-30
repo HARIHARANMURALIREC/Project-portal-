@@ -98,10 +98,14 @@ Visit `http://localhost:5173`
 
 1. Push to GitHub
 2. Import project in [Vercel](https://vercel.com)
-3. Set environment variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. Deploy
+3. **Before or right after first deploy**, set environment variables under **Project → Settings → Environment Variables**:
+   - `VITE_SUPABASE_URL` — e.g. `https://xxxxx.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` — anon/public key from Supabase → Settings → API
+
+   **Important:** Names must start with `VITE_` (not `SUPABASE_URL` alone). Vite bakes these in at **build time**, so after adding or changing them click **Deployments → Redeploy**.
+
+4. In **Supabase → Authentication → URL configuration**, set Site URL and Redirect URLs to your Vercel URL (e.g. `https://your-app.vercel.app/**`).
+5. Deploy / redeploy
 
 ```bash
 npm run build   # verify build passes locally

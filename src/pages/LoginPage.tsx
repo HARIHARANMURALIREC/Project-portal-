@@ -114,6 +114,12 @@ export function LoginPage() {
           </Card>
         </div>
       </main>
+
+      <footer className="px-6 py-6 text-center">
+        <p className="text-sm text-slate-500">
+          Developed with <span className="heart-rgb" aria-label="love">♥</span> TEAM OG
+        </p>
+      </footer>
     </div>
   )
 }

@@ -21,3 +21,32 @@ body {
 * {
   @apply scroll-smooth;
 }
+
+@keyframes heart-rgb {
+  0% {
+    color: #ff0000;
+  }
+  17% {
+    color: #ff8800;
+  }
+  33% {
+    color: #ffff00;
+  }
+  50% {
+    color: #00ff00;
+  }
+  67% {
+    color: #00aaff;
+  }
+  83% {
+    color: #aa00ff;
+  }
+  100% {
+    color: #ff0000;
+  }
+}
+
+.heart-rgb {
+  display: inline-block;
+  animation: heart-rgb 3s linear infinite;
+}

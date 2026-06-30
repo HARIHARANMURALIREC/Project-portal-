@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
@@ -12,8 +12,6 @@ import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import type { Batch, TeamWithDetails } from '@/types/database'
 
-const batchIcons: Record<string, string> = { A: 'A', B: 'B', C: 'C', D: 'D' }
-
 export function AdminDashboard() {
   const { profile, signOut } = useAuth()
   const queryClient = useQueryClient()
@@ -24,7 +22,7 @@ export function AdminDashboard() {
   const [unlockTeamId, setUnlockTeamId] = useState<string | null>(null)
   const [unlocking, setUnlocking] = useState(false)
 
-  const { data: batches = [], isLoading: batchesLoading } = useQuery({
+  const { data: batches = [] } = useQuery({
     queryKey: ['batches'],
     queryFn: async () => {
       const { data, error } = await supabase.from('batches').select('*').order('id')
@@ -59,9 +57,6 @@ export function AdminDashboard() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
         queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['batches'] })
       })
       .subscribe()
 
@@ -107,26 +102,6 @@ export function AdminDashboard() {
     [teams],
   )
 
-  const toggleBatch = useCallback(async (batch: Batch) => {
-    const newOpen = !batch.is_open
-    const { error } = await supabase
-      .from('batches')
-      .update({
-        is_open: newOpen,
-        opened_at: newOpen ? new Date().toISOString() : batch.opened_at,
-        closed_at: newOpen ? null : new Date().toISOString(),
-      })
-      .eq('id', batch.id)
-
-    if (error) {
-      toast.error(error.message)
-      return
-    }
-
-    toast.success(`Batch ${batch.name} ${newOpen ? 'opened' : 'closed'}`)
-    queryClient.invalidateQueries({ queryKey: ['batches'] })
-  }, [queryClient])
-
   const handleForceUnlock = async () => {
     if (!unlockTeamId) return
     setUnlocking(true)
@@ -170,7 +145,7 @@ export function AdminDashboard() {
   return (
     <Layout
       title="Admin Dashboard"
-      subtitle="Manage batch selection windows and monitor team allotments"
+      subtitle="Monitor team allotments and project selections"
       userName={profile?.full_name ?? undefined}
       role="admin"
       onSignOut={signOut}
@@ -181,61 +156,6 @@ export function AdminDashboard() {
         <StatCard label="Projects Selected" value={stats.selected} accent="success" />
         <StatCard label="Pending" value={stats.pending} accent="warning" />
       </div>
-
-      {/* Batch toggles */}
-      <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Batch Selection Control</h2>
-        {batchesLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-200" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {batches.map((batch) => (
-              <Card
-                key={batch.id}
-                className={`transition ${batch.is_open ? 'border-emerald-200 ring-1 ring-emerald-100' : ''}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold ${
-                        batch.is_open
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {batchIcons[batch.id] ?? batch.id}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900">{batch.name}</p>
-                      <StatusBadge
-                        status={batch.is_open ? 'open' : 'locked'}
-                        label={batch.is_open ? 'Open' : 'Closed'}
-                      />
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleBatch(batch)}
-                    className={`relative h-7 w-12 shrink-0 rounded-full transition ${
-                      batch.is_open ? 'bg-emerald-500' : 'bg-slate-300'
-                    }`}
-                    aria-label={`Toggle ${batch.name}`}
-                  >
-                    <span
-                      className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition ${
-                        batch.is_open ? 'left-5' : 'left-0.5'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* Filters + export */}
       <Card className="mb-4" padding="md">

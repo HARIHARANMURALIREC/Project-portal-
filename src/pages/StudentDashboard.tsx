@@ -75,7 +75,7 @@ export function StudentDashboard() {
       if (error) throw error
       return [...new Set(data.map((p) => p.domain).filter(Boolean))].sort() as string[]
     },
-    enabled: !!context && !context.selectedProject && context.batch.is_open,
+    enabled: !!context && !context.selectedProject,
   })
 
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
@@ -94,7 +94,7 @@ export function StudentDashboard() {
       if (error) throw error
       return { projects: data as Project[], total: count ?? 0 }
     },
-    enabled: !!context && !context.selectedProject && context.batch.is_open,
+    enabled: !!context && !context.selectedProject,
   })
 
   useEffect(() => {
@@ -238,18 +238,6 @@ export function StudentDashboard() {
           )}
           <p className="mt-4 rounded-lg bg-emerald-100/60 px-3 py-2 text-xs text-emerald-800">
             Your selection is final and cannot be changed.
-          </p>
-        </Card>
-      ) : !batch.is_open ? (
-        <Card className="py-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-            <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-slate-900">Selection not yet open</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500">
-            Project selection for <strong>{batch.name}</strong> is currently closed. Check back when your admin opens the window.
           </p>
         </Card>
       ) : (

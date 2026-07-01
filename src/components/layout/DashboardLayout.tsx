@@ -69,7 +69,7 @@ function SidebarContent({
   return (
     <>
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.portalTitle}</p>
+        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.portalTitle}</p>
         {showCloseButton && onClose && (
           <button
             type="button"

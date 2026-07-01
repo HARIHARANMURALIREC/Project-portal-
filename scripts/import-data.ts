@@ -13,6 +13,7 @@ import * as path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import XLSX from 'xlsx'
 import { parseBatchFile, type ParsedTeam } from './parseBatchExcel'
+import { normalizeDomain } from './domainNormalization'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -81,7 +82,7 @@ function parseProjects(filePath: string): { s_no: number | null; domain: string 
 
     projects.push({
       s_no: Number(row[0]) || null,
-      domain: String(row[1] ?? '').trim() || null,
+      domain: normalizeDomain(String(row[1] ?? '').trim()),
       title,
       abstract: String(row[3] ?? '').trim() || null,
     })

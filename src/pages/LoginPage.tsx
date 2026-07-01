@@ -192,7 +192,7 @@ export function LoginPage() {
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
-                Admin / Teacher
+                Teacher
               </button>
             </div>
 

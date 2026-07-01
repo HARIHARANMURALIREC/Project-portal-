@@ -14,7 +14,7 @@ const paddingMap = {
 export function Card({ children, className = '', padding = 'md', ...props }: CardProps) {
   return (
     <div
-      className={`rounded-xl border border-slate-200 bg-white shadow-sm ${paddingMap[padding]} ${className}`}
+      className={`rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-app-surface ${paddingMap[padding]} ${className}`}
       {...props}
     >
       {children}
@@ -29,10 +29,10 @@ interface StatCardProps {
 }
 
 const accentStyles = {
-  primary: 'border-violet-200 bg-violet-50 text-violet-700',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  warning: 'border-amber-200 bg-amber-50 text-amber-700',
-  neutral: 'border-slate-200 bg-white text-slate-700',
+  primary: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300',
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
+  warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300',
+  neutral: 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-app-surface dark:text-slate-200',
 }
 
 export function StatCard({ label, value, accent = 'neutral' }: StatCardProps) {

@@ -208,14 +208,6 @@ function parseProjects(filePath: string): { s_no: number | null; domain: string 
   return projects
 }
 
-function supervisorToEmail(name: string): string {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-  return `${slug}@teacher.portal`
-}
-
 function regNoToEmail(regNo: string): string {
   return `${regNo.trim().toLowerCase()}@student.portal`
 }
@@ -327,11 +319,9 @@ async function main() {
   // Insert teams and members
   let teamsCreated = 0
   let membersCreated = 0
-  const teacherNames = new Set<string>()
 
   for (const team of allTeams) {
     const supervisor = team.supervisor_name ?? supervisors.get(team.batch_code) ?? null
-    if (supervisor) teacherNames.add(supervisor)
 
     const { data: teamRow, error: teamError } = await supabase!
       .from('teams')
@@ -377,16 +367,13 @@ async function main() {
   })
   console.log(adminId ? '  Admin: admin@portal.local' : '  Admin: FAILED')
 
-  // Create teacher accounts
-  for (const name of teacherNames) {
-    const email = supervisorToEmail(name)
-    await ensureUser(supabase!, email, DEFAULT_PASSWORD, {
-      role: 'teacher',
-      full_name: name,
-      supervisor_name: name,
-    })
-  }
-  console.log(`  Teachers: ${teacherNames.size} accounts`)
+  // Single teacher account
+  const teacherId = await ensureUser(supabase!, 'baburathinam@rec.edu', 'baburathinam@rec', {
+    role: 'teacher',
+    full_name: 'Baburathinam',
+    supervisor_name: null,
+  })
+  console.log(teacherId ? '  Teacher: baburathinam@rec.edu' : '  Teacher: FAILED')
 
   // Create student accounts and link to team_members
   const { data: allMembers } = await supabase!.from('team_members').select('id, reg_no, name')

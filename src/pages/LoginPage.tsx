@@ -87,9 +87,13 @@ export function LoginPage() {
     })
 
     if (error) {
-      const hint =
-        error.message === 'Invalid login credentials'
-          ? ' Check your team ID and password.'
+      const isInvalidKey =
+        error.status === 401 ||
+        error.message.toLowerCase().includes('invalid api key')
+      const hint = isInvalidKey
+        ? ' Supabase API key is wrong on this deployment. In Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon public key only), then redeploy.'
+        : error.message === 'Invalid login credentials'
+          ? ' Use your Registration No. as the password (same value as Reg.No.).'
           : ''
       toast.error(error.message + hint)
       return
@@ -125,8 +129,12 @@ export function LoginPage() {
     })
 
     if (error) {
-      const hint =
-        error.message === 'Invalid login credentials'
+      const isInvalidKey =
+        error.status === 401 ||
+        error.message.toLowerCase().includes('invalid api key')
+      const hint = isInvalidKey
+        ? ' Supabase API key is wrong on this deployment. In Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon public key only), then redeploy.'
+        : error.message === 'Invalid login credentials'
           ? ' Check your email and password.'
           : ''
       toast.error(error.message + hint)
@@ -198,7 +206,7 @@ export function LoginPage() {
                 />
 
                 <Input
-                  label="Password"
+                  label="Registration No."
                   type="password"
                   autoComplete="current-password"
                   error={studentForm.formState.errors.password?.message}

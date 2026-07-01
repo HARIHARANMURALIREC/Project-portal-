@@ -11,12 +11,14 @@
     "import-data": "tsx scripts/import-data.ts",
     "import-data:dry-run": "tsx scripts/import-data.ts --dry-run",
     "reset-student-passwords": "tsx scripts/reset-student-passwords.ts",
+    "setup-teacher": "tsx scripts/setup-teacher.ts",
     "apply-rls-fix": "tsx scripts/apply-rls-fix.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-query": "^5.101.2",
+    "lucide-react": "^1.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.80.0",

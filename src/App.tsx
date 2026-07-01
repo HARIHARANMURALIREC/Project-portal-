@@ -4,8 +4,12 @@ import { Toaster } from 'sonner'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { LoginPage } from '@/pages/LoginPage'
 import { AdminDashboard } from '@/pages/AdminDashboard'
-import { StudentDashboard } from '@/pages/StudentDashboard'
 import { TeacherDashboard } from '@/pages/TeacherDashboard'
+import { StudentDashboard } from '@/pages/student/StudentDashboard'
+import { AvailableTopics } from '@/pages/student/AvailableTopics'
+import { MyProject } from '@/pages/student/MyProject'
+import { StudentProfile } from '@/pages/student/StudentProfile'
+import { useTheme } from '@/context/ThemeContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,6 +19,11 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+function ThemedToaster() {
+  const { theme } = useTheme()
+  return <Toaster position="top-right" richColors theme={theme} />
+}
 
 export default function App() {
   return (
@@ -46,11 +55,35 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/student/topics"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <AvailableTopics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/my-project"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <MyProject />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentProfile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
-      <Toaster position="top-right" richColors />
+      <ThemedToaster />
     </QueryClientProvider>
   )
 }

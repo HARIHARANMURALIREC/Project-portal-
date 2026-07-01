@@ -37,6 +37,7 @@ export interface Team {
   locked_by_user_id: string | null
   locked_at: string | null
   teacher_comments: string | null
+  selection_blocked: boolean
 }
 
 export interface TeamMember {
@@ -45,6 +46,10 @@ export interface TeamMember {
   reg_no: string
   name: string
   user_id: string | null
+  department?: string | null
+  year?: string | null
+  semester?: string | null
+  section?: string | null
 }
 
 export interface TeamWithDetails extends Team {
@@ -56,4 +61,10 @@ export interface TeamWithDetails extends Team {
 export interface ClaimProjectResult {
   success: boolean
   message: string
+}
+
+export interface PortalSettings {
+  id: number
+  selection_blocked: boolean
+  updated_at: string
 }

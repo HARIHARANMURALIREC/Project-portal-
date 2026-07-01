@@ -52,16 +52,21 @@ export function regNoToEmail(regNo: string): string {
   return `${regNo.trim().toLowerCase()}${STUDENT_EMAIL_DOMAIN}`
 }
 
+/** Student auth: email derived from Reg.No.; password is the Reg.No. itself. */
+export function studentAuthCredentials(regNo: string): { email: string; password: string } {
+  const normalized = regNo.trim()
+  return {
+    email: regNoToEmail(normalized),
+    password: normalized,
+  }
+}
+
+export function normalizeTeamCode(teamCode: string): string {
+  return teamCode.trim().toUpperCase()
+}
+
 export function resolveLoginEmail(identifier: string): string {
   const trimmed = identifier.trim()
-  if (trimmed.includes('@')) return trimmed
-
-  // Team codes (27A01) are not login IDs — students must use their Reg.No.
-  if (/^27[A-D]\d{2}$/i.test(trimmed)) {
-    throw new Error(
-      '27A01 is a team code, not your login ID. Use your Reg.No. from the batch list (e.g. 2116231001001).',
-    )
-  }
-
+  if (trimmed.includes('@')) return trimmed.toLowerCase()
   return regNoToEmail(trimmed)
 }

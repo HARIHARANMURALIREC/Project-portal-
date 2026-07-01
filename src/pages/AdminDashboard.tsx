@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
+import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { useAuth } from '@/hooks/useAuth'
 import { Layout } from '@/components/Layout'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -10,7 +11,7 @@ import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card, StatCard } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
-import type { Batch, TeamWithDetails } from '@/types/database'
+import type { Batch, PortalSettings, TeamWithDetails } from '@/types/database'
 
 export function AdminDashboard() {
   const { profile, signOut } = useAuth()
@@ -21,6 +22,25 @@ export function AdminDashboard() {
   const [search, setSearch] = useState('')
   const [unlockTeamId, setUnlockTeamId] = useState<string | null>(null)
   const [unlocking, setUnlocking] = useState(false)
+  const [togglingSelection, setTogglingSelection] = useState(false)
+  const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null)
+
+  const { data: portalSettings } = useQuery({
+    queryKey: ['portal-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('portal_settings')
+        .select('*')
+        .eq('id', 1)
+        .single()
+      if (error) throw error
+      return data as PortalSettings
+    },
+    refetchInterval: POLL_INTERVALS.adminData,
+    refetchOnWindowFocus: true,
+  })
+
+  const selectionBlocked = portalSettings?.selection_blocked ?? false
 
   const { data: batches = [] } = useQuery({
     queryKey: ['batches'],
@@ -47,23 +67,9 @@ export function AdminDashboard() {
       if (error) throw error
       return data as TeamWithDetails[]
     },
+    refetchInterval: POLL_INTERVALS.adminData,
+    refetchOnWindowFocus: true,
   })
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('admin-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [queryClient])
 
   const filteredTeams = useMemo(() => {
     return teams.filter((team) => {
@@ -123,6 +129,53 @@ export function AdminDashboard() {
     setUnlockTeamId(null)
   }
 
+  const handleToggleSelectionBlock = async () => {
+    setTogglingSelection(true)
+    const nextBlocked = !selectionBlocked
+    const { error } = await supabase
+      .from('portal_settings')
+      .update({
+        selection_blocked: nextBlocked,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 1)
+
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success(
+        nextBlocked
+          ? 'Project selection blocked for all teams'
+          : 'Project selection opened for all teams',
+      )
+      queryClient.invalidateQueries({ queryKey: ['portal-settings'] })
+      queryClient.invalidateQueries({ queryKey: ['student-context'] })
+    }
+    setTogglingSelection(false)
+  }
+
+  const handleToggleTeamSelectionBlock = async (team: TeamWithDetails) => {
+    setTogglingTeamId(team.id)
+    const nextBlocked = !team.selection_blocked
+    const { error } = await supabase
+      .from('teams')
+      .update({ selection_blocked: nextBlocked })
+      .eq('id', team.id)
+
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success(
+        nextBlocked
+          ? `Selection blocked for ${team.batch_code}`
+          : `Selection opened for ${team.batch_code}`,
+      )
+      queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
+      queryClient.invalidateQueries({ queryKey: ['student-context'] })
+    }
+    setTogglingTeamId(null)
+  }
+
   const exportToExcel = () => {
     const rows = teams.map((team) => ({
       Batch: team.batches?.name ?? team.batch_id,
@@ -132,6 +185,7 @@ export function AdminDashboard() {
       Supervisor: team.supervisor_name ?? '',
       'Project Title': team.projects?.title ?? 'Pending',
       Domain: team.projects?.domain ?? '',
+      'Selection Blocked': team.selection_blocked ? 'Yes' : 'No',
       'Locked At': team.locked_at ? new Date(team.locked_at).toLocaleString() : '',
     }))
 
@@ -156,6 +210,32 @@ export function AdminDashboard() {
         <StatCard label="Projects Selected" value={stats.selected} accent="success" />
         <StatCard label="Pending" value={stats.pending} accent="warning" />
       </div>
+
+      {/* Global selection control */}
+      <Card className="mb-8" padding="lg">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Project Selection Control</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Block or allow project selection for every team at once.
+            </p>
+            <div className="mt-3">
+              <StatusBadge status={selectionBlocked ? 'locked' : 'open'} />
+            </div>
+          </div>
+          <Button
+            variant={selectionBlocked ? 'primary' : 'secondary'}
+            onClick={handleToggleSelectionBlock}
+            disabled={togglingSelection || !portalSettings}
+          >
+            {togglingSelection
+              ? 'Updating…'
+              : selectionBlocked
+                ? 'Open selection for all teams'
+                : 'Block selection for all teams'}
+          </Button>
+        </div>
+      </Card>
 
       {/* Filters + export */}
       <Card className="mb-4" padding="md">
@@ -200,64 +280,102 @@ export function AdminDashboard() {
           {teamsLoading ? (
             <div className="p-4"><TableSkeleton rows={8} /></div>
           ) : (
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="sticky top-0 z-10 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+              <thead className="sticky top-0 z-10 bg-white dark:bg-app-surface shadow-sm">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Batch</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Team</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Members</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Supervisor</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Project</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Locked</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Actions</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Batch</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Team</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Members</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Supervisor</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Project</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Selection</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Locked</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredTeams.map((team, idx) => (
                   <tr
                     key={team.id}
-                    className={`transition hover:bg-violet-50/50 ${idx % 2 === 0 ? 'bg-white' : 'bg-white'}`}
+                    className={`transition hover:bg-violet-50/50 dark:hover:bg-violet-950/30 ${idx % 2 === 0 ? 'bg-white dark:bg-app-surface' : 'bg-white dark:bg-app-surface'}`}
                   >
                     <td className="px-4 py-3">{team.batches?.name ?? team.batch_id}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-md bg-violet-50 px-2 py-0.5 font-mono text-xs font-semibold text-violet-700 ring-1 ring-violet-100">
+                      <span className="rounded-md bg-violet-50 dark:bg-violet-950/50 px-2 py-0.5 font-mono text-xs font-semibold text-violet-700 dark:text-violet-300 ring-1 ring-violet-100 dark:ring-violet-800">
                         {team.batch_code}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       {team.team_members?.map((m) => (
                         <div key={m.id} className="text-xs">
-                          {m.name} <span className="text-slate-400">({m.reg_no})</span>
+                          {m.name} <span className="text-slate-400 dark:text-slate-500">({m.reg_no})</span>
                         </div>
                       ))}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{team.supervisor_name ?? '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{team.supervisor_name ?? '—'}</td>
                     <td className="px-4 py-3">
                       {team.projects ? (
                         <div>
                           <p className="font-medium line-clamp-1">{team.projects.title}</p>
                           {team.projects.domain && (
-                            <p className="text-xs text-violet-600">{team.projects.domain}</p>
+                            <p className="text-xs text-violet-600 dark:text-violet-400">{team.projects.domain}</p>
                           )}
                         </div>
                       ) : (
                         <StatusBadge status="pending" />
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-500">
+                    <td className="px-4 py-3">
+                      {team.selected_project_id ? (
+                        <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+                      ) : selectionBlocked ? (
+                        <StatusBadge status="locked" />
+                      ) : team.selection_blocked ? (
+                        <StatusBadge status="locked" />
+                      ) : (
+                        <StatusBadge status="open" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                       {team.locked_at ? new Date(team.locked_at).toLocaleString() : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      {team.selected_project_id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setUnlockTeamId(team.id)}
-                          className="!text-red-600 hover:!bg-red-50"
-                        >
-                          Force unlock
-                        </Button>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {!team.selected_project_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleTeamSelectionBlock(team)}
+                            disabled={togglingTeamId === team.id || selectionBlocked}
+                            className={
+                              team.selection_blocked
+                                ? '!text-emerald-600 dark:text-emerald-400 hover:!bg-emerald-50 dark:bg-emerald-950/50'
+                                : '!text-amber-700 dark:text-amber-300 hover:!bg-amber-50 dark:bg-amber-950/50'
+                            }
+                            title={
+                              selectionBlocked
+                                ? 'Global selection is blocked — open it first'
+                                : undefined
+                            }
+                          >
+                            {togglingTeamId === team.id
+                              ? 'Updating…'
+                              : team.selection_blocked
+                                ? 'Allow selection'
+                                : 'Block selection'}
+                          </Button>
+                        )}
+                        {team.selected_project_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setUnlockTeamId(team.id)}
+                            className="!text-red-600 hover:!bg-red-50"
+                          >
+                            Force unlock
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -266,7 +384,7 @@ export function AdminDashboard() {
           )}
         </div>
         {!teamsLoading && (
-          <div className="border-t border-slate-100 bg-white px-4 py-2.5 text-xs text-slate-500">
+          <div className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-app-surface px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
             Showing {filteredTeams.length} of {teams.length} teams
           </div>
         )}
@@ -276,8 +394,8 @@ export function AdminDashboard() {
       {unlockTeamId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-md shadow-xl" padding="lg">
-            <h3 className="text-lg font-semibold text-slate-900">Force Unlock Team</h3>
-            <p className="mt-2 text-sm text-slate-600">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Force Unlock Team</h3>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               This will clear the team&apos;s project selection and reopen the project for other teams.
             </p>
             <div className="mt-6 flex justify-end gap-3">

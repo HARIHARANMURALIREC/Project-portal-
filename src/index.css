@@ -1,7 +1,11 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-app-black: #000000;
+  --color-app-surface: #111111;
   --color-primary-50: #f5f3ff;
   --color-primary-100: #ede9fe;
   --color-primary-200: #ddd6fe;
@@ -15,7 +19,7 @@
 }
 
 body {
-  @apply bg-white font-sans text-slate-900 antialiased;
+  @apply overflow-x-hidden bg-white font-sans text-slate-900 antialiased dark:bg-app-black dark:text-slate-100;
 }
 
 * {
@@ -49,4 +53,34 @@ body {
 .heart-rgb {
   display: inline-block;
   animation: heart-rgb 3s linear infinite;
+}
+
+@layer components {
+  .dark .page-heading {
+    @apply text-slate-100;
+  }
+
+  .dark .page-muted {
+    @apply text-slate-400;
+  }
+
+  .dark .page-table thead {
+    @apply bg-app-surface shadow-sm;
+  }
+
+  .dark .page-table th {
+    @apply text-slate-300;
+  }
+
+  .dark .page-table td {
+    @apply text-slate-300;
+  }
+
+  .dark .page-table tbody {
+    @apply divide-slate-700;
+  }
+
+  .dark .page-table tr {
+    @apply hover:bg-violet-950/30;
+  }
 }

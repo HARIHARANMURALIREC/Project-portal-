@@ -13,7 +13,7 @@ import { TeamMemberCard } from '@/components/student/TeamMemberCard'
 import { Card } from '@/components/ui/Card'
 import { getProjects } from '@/lib/studentApi'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
-import { getStudentAcademicInfo, getTeamMembersForForm, truncateText } from '@/lib/mappers'
+import { getStudentAcademicInfo, getTeamMembersForDisplay, truncateText } from '@/lib/mappers'
 import { canSelectProject, getProjectStatusLabel, getWelcomeMessage, isSelectionBlocked, isSupervisorAssignedProject } from '@/lib/studentRules'
 import type { StudentContext } from '@/types/student'
 
@@ -25,7 +25,7 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
   const { team, members, batch, selectedProject, selectionBlocked } = context
   const academic = getStudentAcademicInfo(batch.id)
   const teamName = teamDisplayName(team.batch_code)
-  const [member1, member2] = getTeamMembersForForm(members, batch.id)
+  const teamMemberFields = getTeamMembersForDisplay(members, batch.id)
 
   const { data: allProjects = [] } = useQuery({
     queryKey: ['all-projects-count'],
@@ -100,9 +100,15 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
 
         <p className="mb-4 font-medium text-slate-700 dark:text-slate-300">Team Members</p>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <TeamMemberCard memberNumber={1} member={member1} accent="violet" />
-          <TeamMemberCard memberNumber={2} member={member2} accent="emerald" />
+        <div className={`grid gap-4 ${teamMemberFields.length > 2 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+          {teamMemberFields.map((member, index) => (
+            <TeamMemberCard
+              key={member.id ?? member.roll_no ?? index}
+              memberNumber={(index + 1) as 1 | 2}
+              member={member}
+              accent={index % 2 === 0 ? 'violet' : 'emerald'}
+            />
+          ))}
         </div>
       </Card>
 

@@ -12,6 +12,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import XLSX from 'xlsx'
+import { parseBatchFile, type ParsedTeam } from './parseBatchExcel'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -35,125 +36,6 @@ function resolveDataFile(candidates: string[]): string {
     if (fs.existsSync(p)) return p
   }
   return path.join(DATA_DIR, candidates[0])
-}
-
-interface ParsedMember {
-  reg_no: string
-  name: string
-}
-
-interface ParsedTeam {
-  batch_id: string
-  team_no: number
-  batch_code: string
-  members: ParsedMember[]
-  supervisor_name: string | null
-}
-
-interface ParseIssue {
-  file: string
-  row: number
-  message: string
-}
-
-function normalizeHeader(h: unknown): string {
-  return String(h ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_]/g, '')
-}
-
-function findColumn(headers: string[], candidates: string[]): number {
-  for (const c of candidates) {
-    const idx = headers.indexOf(c)
-    if (idx >= 0) return idx
-  }
-  return -1
-}
-
-function parseBatchFile(filePath: string, batchId: string): { teams: ParsedTeam[]; issues: ParseIssue[] } {
-  const issues: ParseIssue[] = []
-  const teams: ParsedTeam[] = []
-
-  if (!fs.existsSync(filePath)) {
-    issues.push({ file: filePath, row: 0, message: 'File not found' })
-    return { teams, issues }
-  }
-
-  const wb = XLSX.readFile(filePath)
-  const sheet = wb.Sheets[wb.SheetNames[0]]
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' }) as unknown[][]
-
-  if (rows.length < 2) {
-    issues.push({ file: filePath, row: 0, message: 'Sheet is empty' })
-    return { teams, issues }
-  }
-
-  const headers = (rows[0] as unknown[]).map(normalizeHeader)
-  const regCol = findColumn(headers, ['reg_no', 'register_no', 'registration_no', 'regno', 'reg'])
-  const nameCol = findColumn(headers, ['name', 'student_name', 'studentname'])
-  const batchCodeCol = findColumn(headers, ['batch_id', 'batchid', 'batch_code', 'batchcode', 'team_code'])
-  const snoCol = findColumn(headers, ['s_no', 'sno', 'sno', 'sl_no', 'slno', 'team_no', 'teamno'])
-
-  if (regCol < 0 || nameCol < 0) {
-    issues.push({ file: filePath, row: 1, message: `Could not find reg_no/name columns. Headers: ${headers.join(', ')}` })
-    return { teams, issues }
-  }
-
-  let teamNo = 0
-  let i = 1
-
-  while (i < rows.length) {
-    const row = rows[i] as unknown[]
-    const regNo = String(row[regCol] ?? '').trim()
-    const name = String(row[nameCol] ?? '').trim()
-
-    if (!regNo && !name) {
-      i++
-      continue
-    }
-
-    if (!regNo || !name) {
-      issues.push({ file: filePath, row: i + 1, message: `Incomplete row: reg="${regNo}" name="${name}"` })
-      i++
-      continue
-    }
-
-    teamNo++
-    const batchCode = batchCodeCol >= 0 ? String(row[batchCodeCol] ?? '').trim() : `${batchId}${String(teamNo).padStart(2, '0')}`
-    const inlineSupervisor = row.length > 4 ? String(row[4] ?? '').trim() || null : null
-    const members: ParsedMember[] = [{ reg_no: regNo, name }]
-
-    // Second member row
-    i++
-    if (i < rows.length) {
-      const row2 = rows[i] as unknown[]
-      const reg2 = String(row2[regCol] ?? '').trim()
-      const name2 = String(row2[nameCol] ?? '').trim()
-      if (reg2 && name2) {
-        members.push({ reg_no: reg2, name: name2 })
-        i++
-      }
-    }
-
-    // Skip blank separator row
-    if (i < rows.length) {
-      const sep = rows[i] as unknown[]
-      const isBlank = sep.every((c) => !String(c ?? '').trim())
-      if (isBlank) i++
-    }
-
-    teams.push({
-      batch_id: batchId,
-      team_no: snoCol >= 0 ? Number(row[snoCol]) || teamNo : teamNo,
-      batch_code: batchCode || `27${batchId}${String(teamNo).padStart(2, '0')}`,
-      members,
-      supervisor_name: inlineSupervisor,
-    })
-  }
-
-  return { teams, issues }
 }
 
 function parseSupervisors(filePath: string): Map<string, string> {

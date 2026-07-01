@@ -3,7 +3,7 @@ import type { TeamMemberFields } from '@/types/student'
 type Accent = 'violet' | 'emerald'
 
 interface TeamMemberCardProps {
-  memberNumber: 1 | 2
+  memberNumber: number
   member: TeamMemberFields
   accent: Accent
 }

@@ -47,16 +47,23 @@ export function memberToFields(
   }
 }
 
+export function getTeamMembersForDisplay(
+  members: TeamMember[],
+  batchId: string,
+): TeamMemberFields[] {
+  const academic = getStudentAcademicInfo(batchId)
+  const sorted = [...members].sort((a, b) => a.reg_no.localeCompare(b.reg_no))
+  return sorted.map((m) => memberToFields(m, academic))
+}
+
+/** @deprecated Use getTeamMembersForDisplay — kept for 2-member layout fallback */
 export function getTeamMembersForForm(
   members: TeamMember[],
   batchId: string,
 ): [TeamMemberFields, TeamMemberFields] {
-  const academic = getStudentAcademicInfo(batchId)
-  const sorted = [...members].sort((a, b) => a.reg_no.localeCompare(b.reg_no))
-  return [
-    memberToFields(sorted[0], academic),
-    memberToFields(sorted[1], academic),
-  ]
+  const list = getTeamMembersForDisplay(members, batchId)
+  const empty = memberToFields(undefined, getStudentAcademicInfo(batchId))
+  return [list[0] ?? empty, list[1] ?? empty]
 }
 
 export function truncateText(text: string, maxLength: number): string {

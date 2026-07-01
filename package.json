@@ -12,6 +12,8 @@
     "import-data:dry-run": "tsx scripts/import-data.ts --dry-run",
     "sync-teams": "tsx scripts/sync-teams-from-excel.ts",
     "sync-teams:dry-run": "tsx scripts/sync-teams-from-excel.ts --dry-run",
+    "normalize-domains": "tsx scripts/normalize-domains.ts",
+    "normalize-domains:dry-run": "tsx scripts/normalize-domains.ts --dry-run",
     "reset-student-passwords": "tsx scripts/reset-student-passwords.ts",
     "setup-teacher": "tsx scripts/setup-teacher.ts",
     "apply-rls-fix": "tsx scripts/apply-rls-fix.ts"

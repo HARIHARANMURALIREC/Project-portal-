@@ -9,6 +9,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -69,7 +70,10 @@ function SidebarContent({
   return (
     <>
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.portalTitle}</p>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <AppLogo size="sm" showCollegeName={false} showPortalTitle={false} />
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.portalTitle}</p>
+        </div>
         {showCloseButton && onClose && (
           <button
             type="button"

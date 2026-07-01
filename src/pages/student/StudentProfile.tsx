@@ -59,7 +59,7 @@ function StudentProfileContent({ context }: { context: StudentContext }) {
           {members.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 px-4 py-3"
+              className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/80"
             >
               <div>
                 <p className="font-medium text-slate-900 dark:text-slate-100">{m.name}</p>

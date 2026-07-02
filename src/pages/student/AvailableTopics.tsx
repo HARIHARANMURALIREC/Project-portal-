@@ -9,7 +9,6 @@ import { CardSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
-import { notifySelectionEmail } from '@/lib/selectionEmailNotify'
 import { supabase } from '@/lib/supabase'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { getProjectDomains } from '@/lib/studentApi'
@@ -112,7 +111,6 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
       if (result?.success) {
         toast.success(result.message)
         queryClient.invalidateQueries({ queryKey: ['student-context'] })
-        notifySelectionEmail(team.id)
       } else {
         setOptimisticLockedIds((prev) => {
           const next = new Set(prev)

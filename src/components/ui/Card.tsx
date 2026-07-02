@@ -25,13 +25,14 @@ export function Card({ children, className = '', padding = 'md', ...props }: Car
 interface StatCardProps {
   label: string
   value: string | number
-  accent?: 'primary' | 'success' | 'warning' | 'neutral'
+  accent?: 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
 }
 
 const accentStyles = {
   primary: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300',
   success: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
   warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300',
+  danger: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300',
   neutral: 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-app-surface dark:text-slate-200',
 }
 

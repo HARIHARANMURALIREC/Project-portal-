@@ -71,6 +71,11 @@ export function AdminDashboard() {
     refetchOnWindowFocus: true,
   })
 
+  const blockedTeams = useMemo(
+    () => teams.filter((team) => team.selection_blocked),
+    [teams],
+  )
+
   const filteredTeams = useMemo(() => {
     return teams.filter((team) => {
       if (batchFilter && team.batch_id !== batchFilter) return false
@@ -95,8 +100,9 @@ export function AdminDashboard() {
       total: teams.length,
       selected,
       pending: teams.length - selected,
+      blocked: blockedTeams.length,
     }
-  }, [teams])
+  }, [teams, blockedTeams])
 
   const supervisors = useMemo(
     () => [...new Set(teams.map((t) => t.supervisor_name).filter(Boolean))].sort() as string[],
@@ -205,10 +211,11 @@ export function AdminDashboard() {
       onSignOut={signOut}
     >
       {/* Stats */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Teams" value={stats.total} accent="primary" />
         <StatCard label="Projects Selected" value={stats.selected} accent="success" />
         <StatCard label="Pending" value={stats.pending} accent="warning" />
+        <StatCard label="Teams Blocked" value={stats.blocked} accent="danger" />
       </div>
 
       {/* Global selection control */}
@@ -235,6 +242,93 @@ export function AdminDashboard() {
                 : 'Block selection for all teams'}
           </Button>
         </div>
+      </Card>
+
+      {/* Blocked teams */}
+      <Card className="mb-8" padding="none">
+        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Blocked Teams</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Teams individually blocked from project selection.
+              </p>
+            </div>
+            <StatusBadge status={blockedTeams.length > 0 ? 'locked' : 'open'} />
+          </div>
+        </div>
+        <div className="max-h-72 overflow-auto">
+          {teamsLoading ? (
+            <div className="p-4"><TableSkeleton rows={3} /></div>
+          ) : blockedTeams.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              No teams are individually blocked.
+            </p>
+          ) : (
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+              <thead className="sticky top-0 z-10 bg-red-50/90 dark:bg-red-950/40">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Batch</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Team</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Members</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Supervisor</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Project</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {blockedTeams.map((team) => (
+                  <tr key={team.id} className="bg-white dark:bg-app-surface">
+                    <td className="px-4 py-3">{team.batches?.name ?? team.batch_id}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-md bg-red-50 px-2 py-0.5 font-mono text-xs font-semibold text-red-700 ring-1 ring-red-100 dark:bg-red-950/50 dark:text-red-300 dark:ring-red-900">
+                        {team.batch_code}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {team.team_members?.map((m) => (
+                        <div key={m.id} className="text-xs">
+                          {m.name} <span className="text-slate-400 dark:text-slate-500">({m.reg_no})</span>
+                        </div>
+                      ))}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{team.supervisor_name ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      {team.projects ? (
+                        <p className="font-medium line-clamp-1">{team.projects.title}</p>
+                      ) : (
+                        <StatusBadge status="pending" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {!team.selected_project_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleTeamSelectionBlock(team)}
+                          disabled={togglingTeamId === team.id || selectionBlocked}
+                          className="!text-emerald-600 dark:text-emerald-400 hover:!bg-emerald-50 dark:hover:!bg-emerald-950/50"
+                          title={
+                            selectionBlocked
+                              ? 'Global selection is blocked — open it first'
+                              : undefined
+                          }
+                        >
+                          {togglingTeamId === team.id ? 'Updating…' : 'Allow selection'}
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {!teamsLoading && blockedTeams.length > 0 && (
+          <div className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-app-surface px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
+            {blockedTeams.length} blocked team{blockedTeams.length === 1 ? '' : 's'}
+          </div>
+        )}
       </Card>
 
       {/* Filters + export */}
@@ -274,7 +368,13 @@ export function AdminDashboard() {
         </div>
       </Card>
 
-      {/* Teams table */}
+      {/* All teams table */}
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">All Teams</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Full allotment list with filters and per-team controls.
+        </p>
+      </div>
       <Card padding="none" className="overflow-hidden">
         <div className="max-h-[32rem] overflow-auto">
           {teamsLoading ? (

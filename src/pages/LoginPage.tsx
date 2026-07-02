@@ -155,14 +155,9 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-app-black">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-700 dark:bg-app-surface/95">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md dark:bg-app-black/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <AppLogo size="sm" showCollegeName={false} showPortalTitle={false} />
-            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-              {branding.portalTitle}
-            </p>
-          </div>
+          <AppLogo size="sm" showCollegeName={false} showPortalTitle={false} />
           <ThemeToggle />
         </div>
       </header>

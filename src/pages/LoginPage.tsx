@@ -154,20 +154,22 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white dark:bg-app-black">
-      <div className="absolute right-4 top-4 z-10">
-        <ThemeToggle />
-      </div>
+    <div className="flex min-h-screen flex-col bg-white dark:bg-app-black">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-700 dark:bg-app-surface/95">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <AppLogo size="sm" showCollegeName={false} showPortalTitle={false} />
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+              {branding.portalTitle}
+            </p>
+          </div>
+          <ThemeToggle />
+        </div>
+      </header>
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
           <Card padding="lg" className="border-slate-200 dark:border-slate-700 shadow-lg ring-1 ring-slate-100 dark:ring-slate-700">
-            <div className="mb-6 flex flex-col items-center text-center">
-              <AppLogo
-                size="lg"
-                showCollegeName={false}
-                showPortalTitle={false}
-                className="mb-4 justify-center"
-              />
+            <div className="mb-6 text-center">
               <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{branding.portalTitle}</h1>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
             </div>

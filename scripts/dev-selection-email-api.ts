@@ -1,7 +1,7 @@
 import type { Connect } from 'vite'
 import { createClient } from '@supabase/supabase-js'
-import { processSelectionEmailForTeam } from './lib/processSelectionEmail.ts'
-import { brevoConfigFromEnv } from './lib/selectionEmail.ts'
+import { processSelectionEmailForTeam } from './lib/processSelectionEmail.js'
+import { brevoConfigFromEnv } from './lib/selectionEmail.js'
 
 function readJsonBody(req: Connect.IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {

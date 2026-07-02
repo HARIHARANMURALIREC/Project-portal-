@@ -12,11 +12,16 @@
     "import-data:dry-run": "tsx scripts/import-data.ts --dry-run",
     "sync-teams": "tsx scripts/sync-teams-from-excel.ts",
     "sync-teams:dry-run": "tsx scripts/sync-teams-from-excel.ts --dry-run",
+    "sync-emails": "tsx scripts/sync-emails-from-excel.ts",
+    "sync-emails:dry-run": "tsx scripts/sync-emails-from-excel.ts --dry-run",
+    "send-selection-email": "tsx scripts/send-selection-email.ts",
+    "deploy:email-function": "npx supabase functions deploy send-selection-email --project-ref nvfatiaxridlijpvzksn",
     "normalize-domains": "tsx scripts/normalize-domains.ts",
     "normalize-domains:dry-run": "tsx scripts/normalize-domains.ts --dry-run",
     "reset-student-passwords": "tsx scripts/reset-student-passwords.ts",
     "setup-teacher": "tsx scripts/setup-teacher.ts",
-    "apply-rls-fix": "tsx scripts/apply-rls-fix.ts"
+    "apply-rls-fix": "tsx scripts/apply-rls-fix.ts",
+    "apply-migration": "tsx scripts/apply-migration.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -37,6 +42,7 @@
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vercel/node": "^5.8.22",
     "@vitejs/plugin-react": "^6.0.2",
     "dotenv": "^17.4.2",
     "oxlint": "^1.69.0",

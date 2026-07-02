@@ -46,6 +46,7 @@ export interface TeamMember {
   reg_no: string
   name: string
   user_id: string | null
+  email?: string | null
   department?: string | null
   year?: string | null
   semester?: string | null

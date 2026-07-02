@@ -3,6 +3,7 @@ import { branding, getCollegeInitials } from '@/config/branding'
 
 interface AppLogoProps {
   size?: 'sm' | 'lg' | 'xl'
+  src?: string
   showCollegeName?: boolean
   showPortalTitle?: boolean
   className?: string
@@ -34,6 +35,7 @@ const sizeConfig = {
 
 export function AppLogo({
   size = 'sm',
+  src,
   showCollegeName = true,
   showPortalTitle = true,
   className = '',
@@ -41,12 +43,13 @@ export function AppLogo({
   const [logoError, setLogoError] = useState(false)
   const cfg = sizeConfig[size]
   const initials = getCollegeInitials(branding.collegeName)
+  const logoSrc = src ?? branding.logoSrc
 
   return (
     <div className={`flex items-center ${cfg.gap} ${className}`}>
       {!logoError ? (
         <img
-          src={branding.logoSrc}
+          src={logoSrc}
           alt={branding.logoAlt}
           className={`${cfg.img} shrink-0 object-contain`}
           onError={() => setLogoError(true)}

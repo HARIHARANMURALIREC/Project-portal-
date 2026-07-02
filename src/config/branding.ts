@@ -3,6 +3,7 @@ export const branding = {
   portalTitle: 'Project Allotment Portal',
   tagline: 'Final Year Project Selection',
   logoSrc: '/college-removebg-preview.png',
+  loginLogoSrc: '/college-logo-removebg-preview.png',
   logoAlt: 'Rajalakshmi Engineering College logo',
 } as const
 

@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
+import { AppLogo } from '@/components/AppLogo'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { branding } from '@/config/branding'
@@ -160,7 +161,13 @@ export function LoginPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
           <Card padding="lg" className="border-slate-200 dark:border-slate-700 shadow-lg ring-1 ring-slate-100 dark:ring-slate-700">
-            <div className="mb-6 text-center">
+            <div className="mb-6 flex flex-col items-center text-center">
+              <AppLogo
+                size="lg"
+                showCollegeName={false}
+                showPortalTitle={false}
+                className="mb-4 justify-center"
+              />
               <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{branding.portalTitle}</h1>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
             </div>

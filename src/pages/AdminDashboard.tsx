@@ -20,9 +20,10 @@ export function AdminDashboard() {
   const [supervisorFilter, setSupervisorFilter] = useState('')
   const [domainFilter, setDomainFilter] = useState('')
   const [search, setSearch] = useState('')
-  const [unlockTeamId, setUnlockTeamId] = useState<string | null>(null)
+  const [confirmUnlockAll, setConfirmUnlockAll] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [togglingSelection, setTogglingSelection] = useState(false)
+  const [togglingPortal, setTogglingPortal] = useState(false)
   const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null)
 
   const { data: portalSettings } = useQuery({
@@ -41,6 +42,7 @@ export function AdminDashboard() {
   })
 
   const selectionBlocked = portalSettings?.selection_blocked ?? false
+  const portalOpen = portalSettings?.portal_open ?? true
 
   const { data: batches = [] } = useQuery({
     queryKey: ['batches'],
@@ -73,6 +75,11 @@ export function AdminDashboard() {
 
   const blockedTeams = useMemo(
     () => teams.filter((team) => team.selection_blocked),
+    [teams],
+  )
+
+  const teamsWithSelection = useMemo(
+    () => teams.filter((team) => team.selected_project_id),
     [teams],
   )
 
@@ -114,25 +121,62 @@ export function AdminDashboard() {
     [teams],
   )
 
-  const handleForceUnlock = async () => {
-    if (!unlockTeamId) return
+  const handleForceUnlockAll = async () => {
+    if (teamsWithSelection.length === 0) return
     setUnlocking(true)
-    const { data, error } = await supabase.rpc('admin_force_unlock', { p_team_id: unlockTeamId })
+
+    let succeeded = 0
+    let failed = 0
+    for (const team of teamsWithSelection) {
+      const { data, error } = await supabase.rpc('admin_force_unlock', { p_team_id: team.id })
+      if (error || !data?.[0]?.success) {
+        failed += 1
+      } else {
+        succeeded += 1
+      }
+    }
+
+    if (failed === 0) {
+      toast.success(`Unlocked ${succeeded} team${succeeded === 1 ? '' : 's'}`)
+    } else if (succeeded === 0) {
+      toast.error('Failed to unlock teams')
+    } else {
+      toast.error(`Unlocked ${succeeded}; ${failed} failed`)
+    }
+
+    if (succeeded > 0) {
+      queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['student-context'] })
+    }
+
+    setUnlocking(false)
+    setConfirmUnlockAll(false)
+  }
+
+  const handleTogglePortalOpen = async () => {
+    setTogglingPortal(true)
+    const nextOpen = !portalOpen
+    const { error } = await supabase
+      .from('portal_settings')
+      .update({
+        portal_open: nextOpen,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 1)
 
     if (error) {
       toast.error(error.message)
     } else {
-      const result = data?.[0]
-      if (result?.success) {
-        toast.success(result.message)
-        queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      } else {
-        toast.error(result?.message ?? 'Unlock failed')
-      }
+      toast.success(
+        nextOpen
+          ? 'Portal opened — students can sign in'
+          : 'Portal closed — students cannot access the portal',
+      )
+      queryClient.invalidateQueries({ queryKey: ['portal-settings'] })
+      queryClient.invalidateQueries({ queryKey: ['portal-status'] })
     }
-
-    setUnlocking(false)
-    setUnlockTeamId(null)
+    setTogglingPortal(false)
   }
 
   const handleToggleSelectionBlock = async () => {
@@ -218,6 +262,32 @@ export function AdminDashboard() {
         <StatCard label="Teams Blocked" value={stats.blocked} accent="danger" />
       </div>
 
+      {/* Portal access control */}
+      <Card className="mb-8" padding="lg">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Portal Access</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Open or close the portal for students. Admins and teachers can always sign in.
+            </p>
+            <div className="mt-3">
+              <StatusBadge status={portalOpen ? 'open' : 'locked'} label={portalOpen ? 'Open' : 'Closed'} />
+            </div>
+          </div>
+          <Button
+            variant={portalOpen ? 'danger' : 'primary'}
+            onClick={handleTogglePortalOpen}
+            disabled={togglingPortal || !portalSettings}
+          >
+            {togglingPortal
+              ? 'Updating…'
+              : portalOpen
+                ? 'Close portal for students'
+                : 'Open portal for students'}
+          </Button>
+        </div>
+      </Card>
+
       {/* Global selection control */}
       <Card className="mb-8" padding="lg">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -240,6 +310,28 @@ export function AdminDashboard() {
               : selectionBlocked
                 ? 'Open selection for all teams'
                 : 'Block selection for all teams'}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Force unlock all */}
+      <Card className="mb-8" padding="lg">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Force Unlock All Teams</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Clear every team&apos;s project selection and reopen those projects for selection again.
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              {teamsWithSelection.length} team{teamsWithSelection.length === 1 ? '' : 's'} currently selected
+            </p>
+          </div>
+          <Button
+            variant="danger"
+            onClick={() => setConfirmUnlockAll(true)}
+            disabled={unlocking || teamsLoading || teamsWithSelection.length === 0}
+          >
+            Force unlock all
           </Button>
         </div>
       </Card>
@@ -465,16 +557,6 @@ export function AdminDashboard() {
                                 : 'Block selection'}
                           </Button>
                         )}
-                        {team.selected_project_id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setUnlockTeamId(team.id)}
-                            className="!text-red-600 hover:!bg-red-50"
-                          >
-                            Force unlock
-                          </Button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -490,20 +572,30 @@ export function AdminDashboard() {
         )}
       </Card>
 
-      {/* Unlock confirmation modal */}
-      {unlockTeamId && (
+      {/* Unlock all confirmation modal */}
+      {confirmUnlockAll && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-md shadow-xl" padding="lg">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Force Unlock Team</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Force Unlock All Teams</h3>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              This will clear the team&apos;s project selection and reopen the project for other teams.
+              This will clear project selections for{' '}
+              <strong>{teamsWithSelection.length}</strong> team{teamsWithSelection.length === 1 ? '' : 's'} and reopen
+              those projects. This cannot be undone.
             </p>
+            <ul className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-app-black">
+              {teamsWithSelection.map((team) => (
+                <li key={team.id} className="py-1 text-slate-700 dark:text-slate-300">
+                  <span className="font-mono font-semibold">{team.batch_code}</span>
+                  {team.projects?.title ? ` — ${team.projects.title}` : ''}
+                </li>
+              ))}
+            </ul>
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setUnlockTeamId(null)}>
+              <Button variant="secondary" onClick={() => setConfirmUnlockAll(false)} disabled={unlocking}>
                 Cancel
               </Button>
-              <Button variant="danger" onClick={handleForceUnlock} disabled={unlocking}>
-                {unlocking ? 'Unlocking…' : 'Confirm unlock'}
+              <Button variant="danger" onClick={handleForceUnlockAll} disabled={unlocking}>
+                {unlocking ? 'Unlocking…' : 'Confirm unlock all'}
               </Button>
             </div>
           </Card>

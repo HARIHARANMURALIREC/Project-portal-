@@ -66,6 +66,7 @@ export interface ClaimProjectResult {
 
 export interface PortalSettings {
   id: number
+  portal_open: boolean
   selection_blocked: boolean
   updated_at: string
 }

@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { CheckCircle2, FolderKanban, Lock, Search, Sparkles } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
-import { StatusBadge } from '@/components/StatusBadge'
 import { CardSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -15,8 +15,6 @@ import { getProjectDomains } from '@/lib/studentApi'
 import { canSelectProject } from '@/lib/studentRules'
 import type { Project } from '@/types/database'
 import type { StudentContext } from '@/types/student'
-
-const PAGE_SIZE = 20
 
 function StudentModal({
   children,
@@ -52,11 +50,9 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
   const { team, selectedProject, selectionBlocked } = context
   const selectionAllowed = canSelectProject(team, selectionBlocked)
 
-  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [domainFilter, setDomainFilter] = useState('')
   const [confirmProject, setConfirmProject] = useState<Project | null>(null)
-  const [detailProject, setDetailProject] = useState<Project | null>(null)
   const [claiming, setClaiming] = useState(false)
   const [optimisticLockedIds, setOptimisticLockedIds] = useState<Set<string>>(new Set())
 
@@ -66,28 +62,25 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
     enabled: selectionAllowed && !selectedProject,
   })
 
-  const { data: projectsData, isLoading: projectsLoading } = useQuery({
-    queryKey: ['projects', page, search, domainFilter],
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ['projects', search, domainFilter],
     queryFn: async () => {
       let query = supabase
         .from('projects')
-        .select('*', { count: 'exact' })
+        .select('id, s_no, title, domain, status')
         .order('s_no', { ascending: true })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
       if (domainFilter) query = query.eq('domain', domainFilter)
-      if (search) query = query.or(`title.ilike.%${search}%,abstract.ilike.%${search}%`)
+      if (search) query = query.ilike('title', `%${search}%`)
 
-      const { data, error, count } = await query
+      const { data, error } = await query
       if (error) throw error
-      return { projects: data as Project[], total: count ?? 0 }
+      return data as Project[]
     },
     enabled: selectionAllowed && !selectedProject,
     refetchInterval: selectionAllowed && !selectedProject ? POLL_INTERVALS.projectsList : false,
     refetchOnWindowFocus: true,
   })
-
-  const totalPages = Math.ceil((projectsData?.total ?? 0) / PAGE_SIZE)
 
   const handleClaim = async () => {
     if (!confirmProject) return
@@ -124,7 +117,6 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
 
     setClaiming(false)
     setConfirmProject(null)
-    setDetailProject(null)
   }
 
   const isProjectLocked = useMemo(
@@ -132,24 +124,58 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
     [optimisticLockedIds],
   )
 
+  const projectStats = useMemo(() => {
+    const available = projects.filter((p) => !isProjectLocked(p)).length
+    const taken = projects.length - available
+    return { total: projects.length, available, taken }
+  }, [projects, isProjectLocked])
+
   if (!selectionAllowed || selectedProject) {
     return <Navigate to="/student/my-project" replace />
   }
 
   return (
-    <>
-      <Card className="mb-4 border-slate-200 dark:border-slate-700" padding="md">
+    <div className="space-y-6">
+      <div className="overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 to-primary-700 p-5 text-white shadow-lg ring-1 ring-violet-500/20 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2 text-violet-100">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="text-sm font-medium">Project selection open</span>
+            </div>
+            <h2 className="text-xl font-bold sm:text-2xl">Available Topics</h2>
+            <p className="mt-2 text-sm text-violet-100">
+              Team <span className="font-semibold text-white">{team.batch_code}</span> — pick one project.
+              Selection is final.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-3">
+            <div className="rounded-lg bg-white/15 px-4 py-2 text-center backdrop-blur-sm">
+              <p className="text-2xl font-bold">{projectStats.available}</p>
+              <p className="text-xs text-violet-100">Open</p>
+            </div>
+            <div className="rounded-lg bg-white/10 px-4 py-2 text-center backdrop-blur-sm">
+              <p className="text-2xl font-bold">{projectStats.taken}</p>
+              <p className="text-xs text-violet-100">Taken</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Card padding="md" className="border-violet-100 ring-1 ring-violet-50 dark:border-violet-800 dark:ring-violet-900">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <div className="min-w-0 flex-1">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="Search projects…"
+              placeholder="Search by project title…"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
             />
           </div>
           <Select
             value={domainFilter}
-            onChange={(e) => { setDomainFilter(e.target.value); setPage(1) }}
+            onChange={(e) => setDomainFilter(e.target.value)}
             className="w-full min-w-0 sm:w-auto sm:min-w-[160px]"
           >
             <option value="">All domains</option>
@@ -160,170 +186,130 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
         </div>
       </Card>
 
-      <div className="space-y-3">
+      <div>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <FolderKanban className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {projectsLoading ? 'Loading projects…' : `${projectStats.total} project${projectStats.total === 1 ? '' : 's'}`}
+            </p>
+          </div>
+        </div>
+
         {projectsLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
-        ) : projectsData?.projects.length === 0 ? (
-          <Card className="border-slate-200 dark:border-slate-700 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-            No projects match your filters.
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
+          <Card className="border-slate-200 py-16 text-center dark:border-slate-700">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-neutral-800">
+              <Search className="h-6 w-6 text-slate-400" />
+            </div>
+            <p className="font-medium text-slate-700 dark:text-slate-200">No projects found</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Try a different search or domain filter.
+            </p>
           </Card>
         ) : (
-          projectsData?.projects.map((project) => {
-            const locked = isProjectLocked(project)
-            return (
-              <Card
-                key={project.id}
-                className={`cursor-pointer border-slate-200 dark:border-slate-700 transition ${
-                  locked
-                    ? 'opacity-60'
-                    : 'hover:border-violet-200 hover:shadow-md hover:ring-1 hover:ring-violet-50 dark:ring-violet-900'
-                }`}
-                onClick={() => setDetailProject(project)}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      {project.s_no != null && (
-                        <span className="font-mono text-xs text-slate-400 dark:text-slate-500">#{project.s_no}</span>
-                      )}
-                      {project.domain && (
-                        <span className="rounded-full bg-violet-50 dark:bg-violet-950/50 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:text-violet-300 ring-1 ring-violet-100 dark:ring-violet-800">
-                          {project.domain}
-                        </span>
-                      )}
-                      {locked && <StatusBadge status="locked" />}
-                    </div>
-                    <h3 className="break-words font-semibold text-slate-900 dark:text-slate-100">{project.title}</h3>
-                    {project.abstract && (
-                      <p className="mt-1.5 line-clamp-2 break-words text-sm text-slate-600 dark:text-slate-300">{project.abstract}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => {
+              const locked = isProjectLocked(project)
+              return (
+                <Card
+                  key={project.id}
+                  padding="md"
+                  className={`flex h-full flex-col border-slate-200 transition dark:border-slate-700 ${
+                    locked
+                      ? 'bg-slate-50/80 opacity-75 dark:bg-app-black/30'
+                      : 'hover:border-violet-300 hover:shadow-md hover:ring-2 hover:ring-violet-100 dark:hover:border-violet-700 dark:hover:ring-violet-900/50'
+                  }`}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    {project.s_no != null && (
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-mono text-sm font-bold ${
+                          locked
+                            ? 'bg-slate-200 text-slate-500 dark:bg-neutral-800 dark:text-slate-400'
+                            : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                        }`}
+                      >
+                        {project.s_no}
+                      </span>
                     )}
-                    <p className="mt-2 text-xs font-medium text-violet-600 dark:text-violet-400">Click to view full details</p>
+                    {locked ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-neutral-800 dark:text-slate-400">
+                        <Lock className="h-3 w-3" />
+                        Taken
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        Open
+                      </span>
+                    )}
                   </div>
-                  {!locked && (
+
+                  <h3
+                    className={`mb-4 min-h-[3.5rem] flex-1 break-words text-sm font-semibold leading-snug ${
+                      locked
+                        ? 'text-slate-500 line-through decoration-slate-300 dark:text-slate-500'
+                        : 'text-slate-900 dark:text-slate-100'
+                    }`}
+                  >
+                    {project.title}
+                  </h3>
+
+                  {!locked ? (
                     <Button
                       size="sm"
-                      className="w-full shrink-0 sm:w-auto"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setConfirmProject(project)
-                      }}
+                      fullWidth
+                      onClick={() => setConfirmProject(project)}
                     >
+                      <CheckCircle2 className="mr-1.5 h-4 w-4" />
                       Select
                     </Button>
+                  ) : (
+                    <div className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 py-2 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-neutral-900 dark:text-slate-400">
+                      <Lock className="h-3.5 w-3.5" />
+                      Unavailable
+                    </div>
                   )}
-                </div>
-              </Card>
-            )
-          })
+                </Card>
+              )
+            })}
+          </div>
         )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
-
-      {detailProject && (
-        <StudentModal onClose={() => setDetailProject(null)}>
-          <Card
-            className="max-h-[min(85dvh,100%)] w-full min-w-0 overflow-x-hidden overflow-y-auto rounded-b-none border-slate-200 dark:border-slate-700 shadow-xl sm:max-h-[85vh] sm:rounded-xl"
-            padding="lg"
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                {detailProject.s_no != null && (
-                  <span className="font-mono text-sm text-slate-500 dark:text-slate-400">#{detailProject.s_no}</span>
-                )}
-                {detailProject.domain && (
-                  <span className="rounded-full bg-violet-50 dark:bg-violet-950/50 px-3 py-0.5 text-xs font-semibold text-violet-700 dark:text-violet-300 ring-1 ring-violet-100 dark:ring-violet-800">
-                    {detailProject.domain}
-                  </span>
-                )}
-                {isProjectLocked(detailProject) ? (
-                  <StatusBadge status="locked" />
-                ) : (
-                  <StatusBadge status="open" />
-                )}
-              </div>
-              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setDetailProject(null)}>
-                Close
-              </Button>
-            </div>
-
-            <h3 className="break-words text-base font-bold leading-snug text-slate-900 dark:text-slate-100 sm:text-lg">
-              {detailProject.title}
-            </h3>
-
-            <div className="mt-6 min-w-0">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Abstract</h4>
-              {detailProject.abstract ? (
-                <p className="mt-2 break-words text-sm leading-relaxed text-slate-700 dark:text-slate-300 [overflow-wrap:anywhere]">
-                  {detailProject.abstract}
-                </p>
-              ) : (
-                <p className="mt-2 text-sm italic text-slate-500 dark:text-slate-400">No abstract provided.</p>
-              )}
-            </div>
-
-            <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 sm:flex-row sm:flex-wrap sm:justify-end">
-              <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setDetailProject(null)}>
-                Back to list
-              </Button>
-              {!isProjectLocked(detailProject) && (
-                <Button
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    setConfirmProject(detailProject)
-                    setDetailProject(null)
-                  }}
-                >
-                  Select this project
-                </Button>
-              )}
-            </div>
-          </Card>
-        </StudentModal>
-      )}
-
       {confirmProject && (
         <StudentModal onClose={() => setConfirmProject(null)}>
-          <Card className="w-full min-w-0 overflow-x-hidden rounded-b-none border-slate-200 dark:border-slate-700 shadow-xl sm:rounded-xl" padding="lg">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Confirm Project Selection</h3>
-            <p className="mt-2 break-words text-sm font-medium text-violet-700 dark:text-violet-300">{confirmProject.title}</p>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-              Are you sure? This cannot be undone. Once selected, your team cannot change their project.
+          <Card
+            className="w-full min-w-0 overflow-x-hidden rounded-b-none border-violet-200 shadow-xl dark:border-violet-800 sm:rounded-xl"
+            padding="lg"
+          >
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/60">
+              <CheckCircle2 className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Confirm selection</h3>
+            <p className="mt-3 break-words rounded-lg bg-violet-50 px-3 py-2.5 text-sm font-medium text-violet-800 dark:bg-violet-950/50 dark:text-violet-200">
+              {confirmProject.title}
+            </p>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              This choice is <strong>final</strong>. Your team cannot change the project after confirming.
             </p>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setConfirmProject(null)}>
                 Cancel
               </Button>
               <Button className="w-full sm:w-auto" onClick={handleClaim} disabled={claiming}>
-                {claiming ? 'Claiming…' : 'Yes, select this project'}
+                {claiming ? 'Claiming…' : 'Confirm selection'}
               </Button>
             </div>
           </Card>
         </StudentModal>
       )}
-    </>
+    </div>
   )
 }
 

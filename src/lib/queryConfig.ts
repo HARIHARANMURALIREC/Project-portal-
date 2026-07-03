@@ -6,4 +6,6 @@ export const POLL_INTERVALS = {
   projectsList: 5_000,
   /** Admin dashboard tables */
   adminData: 10_000,
+  /** Portal open/closed status */
+  portalStatus: 15_000,
 } as const

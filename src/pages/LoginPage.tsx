@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   supabase,
@@ -12,6 +13,8 @@ import {
   normalizeTeamCode,
   studentAuthCredentials,
 } from '@/lib/supabase'
+import { fetchPortalOpen } from '@/lib/portal'
+import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -57,8 +60,18 @@ async function verifyStudentTeam(teamId: string): Promise<boolean> {
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { profile, loading } = useAuth()
+  const { profile, loading, signOut } = useAuth()
   const [mode, setMode] = useState<LoginMode>('student')
+
+  const { data: portalOpen = true } = useQuery({
+    queryKey: ['portal-status'],
+    queryFn: fetchPortalOpen,
+    enabled: isSupabaseConfigured,
+    refetchInterval: POLL_INTERVALS.portalStatus,
+    refetchOnWindowFocus: true,
+  })
+
+  const studentPortalClosed = mode === 'student' && !portalOpen
 
   const studentForm = useForm<StudentLoginForm>({
     resolver: zodResolver(studentLoginSchema),
@@ -70,14 +83,35 @@ export function LoginPage() {
 
   useEffect(() => {
     if (!loading && profile) {
-      const path = profile.role === 'admin' ? '/admin' : profile.role === 'teacher' ? '/teacher' : '/student'
-      navigate(path, { replace: true })
+      if (profile.role === 'admin') {
+        navigate('/admin', { replace: true })
+        return
+      }
+      if (profile.role === 'teacher') {
+        navigate('/teacher', { replace: true })
+        return
+      }
+      if (profile.role === 'student') {
+        fetchPortalOpen().then((open) => {
+          if (open) {
+            navigate('/student', { replace: true })
+          } else {
+            void signOut()
+          }
+        })
+      }
     }
-  }, [profile, loading, navigate])
+  }, [profile, loading, navigate, signOut])
 
   async function onStudentSubmit(data: StudentLoginForm) {
     if (!isSupabaseConfigured) {
       toast.error(supabaseConfigError ?? 'Supabase is not configured.')
+      return
+    }
+
+    const open = await fetchPortalOpen()
+    if (!open) {
+      toast.error('The portal is currently closed. Please try again later.')
       return
     }
 
@@ -181,6 +215,12 @@ export function LoginPage() {
               </div>
             )}
 
+            {studentPortalClosed && (
+              <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-3 py-2 text-left text-xs text-red-900 dark:text-red-200">
+                The portal is currently closed. Student login is disabled. Teachers and administrators can still sign in.
+              </div>
+            )}
+
             <div className="mb-5 flex rounded-lg bg-slate-100 dark:bg-app-surface p-1">
               <button
                 type="button"
@@ -207,6 +247,11 @@ export function LoginPage() {
             </div>
 
             {mode === 'student' ? (
+              studentPortalClosed ? (
+                <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                  Contact your coordinator for more information.
+                </p>
+              ) : (
               <form onSubmit={studentForm.handleSubmit(onStudentSubmit)} className="space-y-4">
                 <Input
                   label="Team ID"
@@ -233,6 +278,7 @@ export function LoginPage() {
                   {studentForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>
+              )
             ) : (
               <form onSubmit={staffForm.handleSubmit(onStaffSubmit)} className="space-y-4">
                 <Input

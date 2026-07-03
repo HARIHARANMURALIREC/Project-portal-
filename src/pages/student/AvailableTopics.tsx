@@ -124,11 +124,7 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
     [optimisticLockedIds],
   )
 
-  const projectStats = useMemo(() => {
-    const available = projects.filter((p) => !isProjectLocked(p)).length
-    const taken = projects.length - available
-    return { total: projects.length, available, taken }
-  }, [projects, isProjectLocked])
+  const projectCount = projects.length
 
   if (!selectionAllowed || selectedProject) {
     return <Navigate to="/student/my-project" replace />
@@ -148,16 +144,6 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
               Team <span className="font-semibold text-white">{team.batch_code}</span> — pick one project.
               Selection is final.
             </p>
-          </div>
-          <div className="flex shrink-0 gap-3">
-            <div className="rounded-lg bg-white/15 px-4 py-2 text-center backdrop-blur-sm">
-              <p className="text-2xl font-bold">{projectStats.available}</p>
-              <p className="text-xs text-violet-100">Open</p>
-            </div>
-            <div className="rounded-lg bg-white/10 px-4 py-2 text-center backdrop-blur-sm">
-              <p className="text-2xl font-bold">{projectStats.taken}</p>
-              <p className="text-xs text-violet-100">Taken</p>
-            </div>
           </div>
         </div>
       </div>
@@ -191,7 +177,7 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
           <div className="flex items-center gap-2">
             <FolderKanban className="h-4 w-4 text-violet-600 dark:text-violet-400" />
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              {projectsLoading ? 'Loading projects…' : `${projectStats.total} project${projectStats.total === 1 ? '' : 's'}`}
+              {projectsLoading ? 'Loading projects…' : `${projectCount} project${projectCount === 1 ? '' : 's'}`}
             </p>
           </div>
         </div>
@@ -226,26 +212,16 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
                       : 'hover:border-violet-300 hover:shadow-md hover:ring-2 hover:ring-violet-100 dark:hover:border-violet-700 dark:hover:ring-violet-900/50'
                   }`}
                 >
-                  <div className="mb-3 flex items-start justify-between gap-2">
+                  <div className="mb-3">
                     {project.s_no != null && (
                       <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-mono text-sm font-bold ${
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl font-mono text-sm font-bold ${
                           locked
                             ? 'bg-slate-200 text-slate-500 dark:bg-neutral-800 dark:text-slate-400'
                             : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                         }`}
                       >
                         {project.s_no}
-                      </span>
-                    )}
-                    {locked ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-neutral-800 dark:text-slate-400">
-                        <Lock className="h-3 w-3" />
-                        Taken
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                        Open
                       </span>
                     )}
                   </div>

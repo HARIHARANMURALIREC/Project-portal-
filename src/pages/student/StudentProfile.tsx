@@ -37,6 +37,12 @@ function StudentProfileContent({ context }: { context: StudentContext }) {
             <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">{academic.section}</dd>
           </div>
           <div>
+            <dt className="text-sm text-slate-500 dark:text-slate-400">Project Supervisor</dt>
+            <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {team.supervisor_name ?? '—'}
+            </dd>
+          </div>
+          <div>
             <dt className="text-sm text-slate-500 dark:text-slate-400">Year</dt>
             <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">{academic.year}</dd>
           </div>
@@ -44,12 +50,6 @@ function StudentProfileContent({ context }: { context: StudentContext }) {
             <dt className="text-sm text-slate-500 dark:text-slate-400">Semester</dt>
             <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">{academic.semester}</dd>
           </div>
-          {team.supervisor_name && (
-            <div>
-              <dt className="text-sm text-slate-500 dark:text-slate-400">Supervisor</dt>
-              <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">{team.supervisor_name}</dd>
-            </div>
-          )}
         </dl>
       </Card>
 

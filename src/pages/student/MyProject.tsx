@@ -76,11 +76,9 @@ function MyProjectContent({ context }: { context: StudentContext }) {
           )}
         </div>
 
-        {team.supervisor_name && supervisorAssigned && (
-          <p className="mb-3 text-sm text-violet-700 dark:text-violet-300">
-            This project was assigned under your supervisor{' '}
-            <span className="font-semibold">{team.supervisor_name}</span>. You do not need to
-            select a different project.
+        {team.supervisor_name && (
+          <p className="mb-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+            Project supervisor: <span className="font-semibold">{team.supervisor_name}</span>
           </p>
         )}
 

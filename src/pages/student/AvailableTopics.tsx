@@ -141,8 +141,15 @@ function AvailableTopicsContent({ context }: { context: StudentContext }) {
             </div>
             <h2 className="text-xl font-bold sm:text-2xl">Available Topics</h2>
             <p className="mt-2 text-sm text-violet-100">
-              Team <span className="font-semibold text-white">{team.batch_code}</span> — pick one project.
-              Selection is final.
+              Team <span className="font-semibold text-white">{team.batch_code}</span>
+              {team.supervisor_name && (
+                <>
+                  {' '}
+                  · Supervisor{' '}
+                  <span className="font-semibold text-white">{team.supervisor_name}</span>
+                </>
+              )}
+              {' '}— pick one project. Selection is final.
             </p>
           </div>
         </div>

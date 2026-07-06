@@ -7,6 +7,7 @@ import {
   Clock,
   BookOpen,
   AlertCircle,
+  GraduationCap,
 } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { TeamMemberCard } from '@/components/student/TeamMemberCard'
@@ -51,7 +52,7 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Team Details</h3>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400">Team ID</p>
             <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{team.batch_code}</p>
@@ -59,6 +60,12 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400">Team Name</p>
             <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{teamName}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Project Supervisor</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {team.supervisor_name ?? '—'}
+            </p>
           </div>
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400">Department</p>
@@ -89,12 +96,6 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
             )}
           </div>
         </div>
-
-        {team.supervisor_name && (
-          <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-            Supervisor: <span className="font-medium">{team.supervisor_name}</span>
-          </p>
-        )}
 
         <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
 
@@ -149,6 +150,20 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
           </div>
         </Card>
 
+        <Card padding="lg" className="border-violet-100 dark:border-violet-800 bg-gradient-to-br from-violet-50 dark:from-violet-950/50 to-white dark:to-app-surface ring-1 ring-violet-50 dark:ring-violet-900 sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/60">
+              <GraduationCap className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Project Supervisor</p>
+              <p className="truncate text-lg font-bold text-slate-900 dark:text-slate-100">
+                {team.supervisor_name ?? 'Not assigned'}
+              </p>
+            </div>
+          </div>
+        </Card>
+
         <Card padding="lg" className="border-slate-200 dark:border-slate-700 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-app-surface">
@@ -182,9 +197,9 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
                 {selectedProject.domain}
               </span>
             )}
-            {team.supervisor_name && isSupervisorAssignedProject(team) && (
+            {team.supervisor_name && (
               <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                Assigned under supervisor: <span className="font-medium">{team.supervisor_name}</span>
+                Project supervisor: <span className="font-medium">{team.supervisor_name}</span>
               </p>
             )}
             {team.locked_at && !isSupervisorAssignedProject(team) && (

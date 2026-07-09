@@ -1,5 +1,6 @@
 /**
- * Replace all teacher accounts with a single teacher login.
+ * Create or update the lead coordinator account (Baburathinam) only.
+ * Does not touch supervisor @teacher.portal accounts.
  *
  * Usage:
  *   npm run setup-teacher
@@ -7,6 +8,7 @@
  */
 
 import 'dotenv/config'
+import { fileURLToPath } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
@@ -28,52 +30,14 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const { data: teachers, error } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .eq('role', 'teacher')
-
-  if (error) {
-    console.error('Failed to load teacher profiles:', error.message)
-    process.exit(1)
-  }
-
-  console.log(`Found ${teachers?.length ?? 0} existing teacher profile(s)`)
-
-  for (const teacher of teachers ?? []) {
-    if (teacher.id) {
-      console.log(`  Remove teacher: ${teacher.full_name ?? teacher.id}`)
-      if (!dryRun) {
-        const { error: deleteError } = await supabase.auth.admin.deleteUser(teacher.id)
-        if (deleteError) {
-          console.error(`    Failed to delete ${teacher.id}:`, deleteError.message)
-        }
-      }
-    }
-  }
-
-  const { data: existingUsers } = await supabase.auth.admin.listUsers()
-  const staleTeacherUsers =
-    existingUsers?.users?.filter(
-      (u) =>
-        u.email?.endsWith('@teacher.portal') ||
-        (u.email?.toLowerCase() === TEACHER_EMAIL && !teachers?.some((t) => t.id === u.id)),
-    ) ?? []
-
-  for (const user of staleTeacherUsers) {
-    if (teachers?.some((t) => t.id === user.id)) continue
-    console.log(`  Remove stale auth user: ${user.email}`)
-    if (!dryRun) {
-      await supabase.auth.admin.deleteUser(user.id)
-    }
-  }
-
-  console.log(`\nCreate teacher: ${TEACHER_EMAIL}`)
+  console.log(`Lead coordinator only: ${TEACHER_EMAIL}`)
+  console.log('Supervisor @teacher.portal accounts are not modified.')
   if (dryRun) {
-    console.log('(dry-run — no user created)')
+    console.log('(dry-run — no changes)')
     return
   }
 
+  const { data: existingUsers } = await supabase.auth.admin.listUsers()
   const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === TEACHER_EMAIL)
   let userId = existing?.id
 
@@ -85,7 +49,7 @@ async function main() {
       user_metadata: { full_name: TEACHER_NAME },
     })
     if (updateError) {
-      console.error('Failed to update teacher user:', updateError.message)
+      console.error('Failed to update coordinator user:', updateError.message)
       process.exit(1)
     }
   } else {
@@ -96,7 +60,7 @@ async function main() {
       user_metadata: { full_name: TEACHER_NAME },
     })
     if (createError || !data.user) {
-      console.error('Failed to create teacher user:', createError?.message)
+      console.error('Failed to create coordinator user:', createError?.message)
       process.exit(1)
     }
     userId = data.user.id
@@ -111,7 +75,7 @@ async function main() {
   })
 
   if (profileError) {
-    console.error('Failed to upsert teacher profile:', profileError.message)
+    console.error('Failed to upsert coordinator profile:', profileError.message)
     process.exit(1)
   }
 
@@ -120,4 +84,6 @@ async function main() {
   console.log(`  Password: ${TEACHER_PASSWORD}`)
 }
 
-main()
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main()
+}

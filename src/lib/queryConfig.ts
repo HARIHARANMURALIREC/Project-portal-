@@ -8,4 +8,6 @@ export const POLL_INTERVALS = {
   adminData: 10_000,
   /** Portal open/closed status */
   portalStatus: 15_000,
+  /** Team reviews for students and supervisors */
+  teamReviews: 10_000,
 } as const

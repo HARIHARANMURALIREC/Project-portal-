@@ -47,6 +47,10 @@ export const supabase = createClient(
 
 export const STUDENT_EMAIL_DOMAIN = '@student.portal'
 export const TEACHER_EMAIL_DOMAIN = '@teacher.portal'
+export const FACULTY_EMAIL_DOMAIN = '@rajalakshmi.edu.in'
+
+/** Lead coordinator — separate from per-supervisor faculty accounts. */
+export const LEAD_TEACHER_EMAIL = 'baburathinam@rec.edu'
 
 export function regNoToEmail(regNo: string): string {
   return `${regNo.trim().toLowerCase()}${STUDENT_EMAIL_DOMAIN}`
@@ -69,4 +73,47 @@ export function resolveLoginEmail(identifier: string): string {
   const trimmed = identifier.trim()
   if (trimmed.includes('@')) return trimmed.toLowerCase()
   return regNoToEmail(trimmed)
+}
+
+/** Coordinator login (e.g. baburathinam@rec.edu) — not supervisor @teacher.portal accounts. */
+export function resolveCoordinatorLoginEmail(identifier: string): string {
+  const trimmed = identifier.trim().toLowerCase()
+  if (!trimmed.includes('@')) {
+    throw new Error('Enter your full coordinator email (e.g. baburathinam@rec.edu)')
+  }
+  if (trimmed.endsWith(TEACHER_EMAIL_DOMAIN)) {
+    throw new Error('Supervisor accounts sign in on the Supervisor tab')
+  }
+  return trimmed
+}
+
+function normalizeFacultyEmail(email: string): string {
+  let normalized = email.trim().toLowerCase()
+  if (normalized.endsWith('@rajalakshmi.edu') && !normalized.endsWith(FACULTY_EMAIL_DOMAIN)) {
+    normalized += '.in'
+  }
+  return normalized
+}
+
+/** Per-supervisor teacher login (faculty @rajalakshmi.edu.in email). */
+export function resolveSupervisorLoginEmail(identifier: string): string {
+  const trimmed = identifier.trim().toLowerCase()
+  if (!trimmed.includes('@')) {
+    throw new Error('Enter your full supervisor email (e.g. muthukumar.b@rajalakshmi.edu.in)')
+  }
+
+  const email = normalizeFacultyEmail(trimmed)
+
+  if (email === LEAD_TEACHER_EMAIL || email.endsWith('@rec.edu')) {
+    throw new Error('Coordinator accounts sign in on the Coordinator tab')
+  }
+
+  if (
+    !email.endsWith(FACULTY_EMAIL_DOMAIN) &&
+    !email.endsWith(TEACHER_EMAIL_DOMAIN)
+  ) {
+    throw new Error(`Supervisor email must be a faculty address (${FACULTY_EMAIL_DOMAIN})`)
+  }
+
+  return email
 }

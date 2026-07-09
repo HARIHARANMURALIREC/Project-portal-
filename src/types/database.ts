@@ -57,6 +57,20 @@ export interface TeamWithDetails extends Team {
   team_members: TeamMember[]
   projects: Project | null
   batches: Batch | null
+  team_reviews?: TeamReview[]
+}
+
+export interface TeamReview {
+  id: string
+  team_id: string
+  review_title: string
+  scheduled_at: string
+  completed_at: string | null
+  completed_by: string | null
+  remarks: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
 }
 
 export interface ClaimProjectResult {

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchPortalOpen } from '@/lib/portal'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
+import { teacherHomePath } from '@/lib/teacherRoutes'
 import { PortalClosedPage } from '@/pages/PortalClosedPage'
 import type { UserRole } from '@/types/database'
 
@@ -37,7 +38,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && !allowedRoles.includes(profile.role)) {
-    const redirect = profile.role === 'admin' ? '/admin' : profile.role === 'teacher' ? '/teacher' : '/student'
+    const redirect =
+      profile.role === 'admin' ? '/admin' : profile.role === 'teacher' ? teacherHomePath(profile) : '/student'
     return <Navigate to={redirect} replace />
   }
 

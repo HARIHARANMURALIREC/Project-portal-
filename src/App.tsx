@@ -4,10 +4,14 @@ import { Toaster } from 'sonner'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { LoginPage } from '@/pages/LoginPage'
 import { AdminDashboard } from '@/pages/AdminDashboard'
-import { TeacherDashboard } from '@/pages/TeacherDashboard'
+import { CoordinatorDashboard } from '@/pages/CoordinatorDashboard'
+import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
+import { TeacherReviews } from '@/pages/teacher/TeacherReviews'
+import { TeacherProfile } from '@/pages/teacher/TeacherProfile'
 import { StudentDashboard } from '@/pages/student/StudentDashboard'
 import { AvailableTopics } from '@/pages/student/AvailableTopics'
 import { MyProject } from '@/pages/student/MyProject'
+import { StudentReviews } from '@/pages/student/StudentReviews'
 import { StudentProfile } from '@/pages/student/StudentProfile'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -40,10 +44,34 @@ export default function App() {
             }
           />
           <Route
+            path="/coordinator"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <CoordinatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/teacher"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/reviews"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherReviews />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/profile"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherProfile />
               </ProtectedRoute>
             }
           />
@@ -68,6 +96,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <MyProject />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/reviews"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentReviews />
               </ProtectedRoute>
             }
           />

@@ -22,7 +22,9 @@ export function isSupervisorAssignedProject(team: Team): boolean {
 export function getWelcomeMessage(team: Team, globalBlocked = false): string {
   if (isSelectionBlocked(team, globalBlocked) && !hasAssignedProject(team)) {
     if (team.selection_blocked && !globalBlocked) {
-      return 'Project selection is blocked for your team. Please contact your administrator.'
+      return team.supervisor_name
+        ? `Project selection is blocked for your team. Your supervisor is ${team.supervisor_name}. Contact your administrator.`
+        : 'Project selection is blocked for your team. Please contact your administrator.'
     }
     return 'Project selection is currently closed by the administrator. Please check back later.'
   }

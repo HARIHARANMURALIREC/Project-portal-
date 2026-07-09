@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  FolderKanban,
-  BookOpen,
   CalendarCheck,
   User,
   LogOut,
@@ -14,27 +12,25 @@ import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import type { StudentNavKey } from '@/types/student'
+import type { TeacherNavKey } from '@/types/teacher'
 
-interface DashboardLayoutProps {
+interface TeacherDashboardLayoutProps {
   title: string
-  activeNav: StudentNavKey
+  activeNav: TeacherNavKey
   userName?: string
+  supervisorName?: string
   onSignOut: () => void
-  showTopicsNav?: boolean
   children: React.ReactNode
 }
 
-const navItems: { key: StudentNavKey; label: string; to: string; icon: typeof LayoutDashboard }[] = [
-  { key: 'dashboard', label: 'Dashboard', to: '/student', icon: LayoutDashboard },
-  { key: 'topics', label: 'Available Topics', to: '/student/topics', icon: FolderKanban },
-  { key: 'project', label: 'My Project', to: '/student/my-project', icon: BookOpen },
-  { key: 'reviews', label: 'Reviews', to: '/student/reviews', icon: CalendarCheck },
-  { key: 'profile', label: 'Profile', to: '/student/profile', icon: User },
+const navItems: { key: TeacherNavKey; label: string; to: string; icon: typeof LayoutDashboard }[] = [
+  { key: 'dashboard', label: 'Dashboard', to: '/teacher', icon: LayoutDashboard },
+  { key: 'reviews', label: 'Reviews', to: '/teacher/reviews', icon: CalendarCheck },
+  { key: 'profile', label: 'Profile', to: '/teacher/profile', icon: User },
 ]
 
 function UserAvatar({ name }: { name: string }) {
-  const initial = name.trim().charAt(0).toUpperCase() || 'S'
+  const initial = name.trim().charAt(0).toUpperCase() || 'T'
   return (
     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800">
       {initial}
@@ -51,9 +47,9 @@ function navLinkClass(active: boolean) {
 }
 
 interface SidebarContentProps {
-  activeNav: StudentNavKey
-  visibleNavItems: typeof navItems
+  activeNav: TeacherNavKey
   userName?: string
+  supervisorName?: string
   onSignOut: () => void
   onNavigate?: () => void
   showCloseButton?: boolean
@@ -62,8 +58,8 @@ interface SidebarContentProps {
 
 function SidebarContent({
   activeNav,
-  visibleNavItems,
   userName,
+  supervisorName,
   onSignOut,
   onNavigate,
   showCloseButton,
@@ -88,8 +84,14 @@ function SidebarContent({
         )}
       </div>
 
+      {supervisorName && (
+        <p className="border-b border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          Supervisor: <span className="font-medium text-slate-700 dark:text-slate-300">{supervisorName}</span>
+        </p>
+      )}
+
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {visibleNavItems.map(({ key, label, to, icon: Icon }) => (
+        {navItems.map(({ key, label, to, icon: Icon }) => (
           <NavLink
             key={key}
             to={to}
@@ -126,20 +128,16 @@ function SidebarContent({
   )
 }
 
-export function DashboardLayout({
+export function TeacherDashboardLayout({
   title,
   activeNav,
   userName,
+  supervisorName,
   onSignOut,
-  showTopicsNav = true,
   children,
-}: DashboardLayoutProps) {
+}: TeacherDashboardLayoutProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  const visibleNavItems = showTopicsNav
-    ? navItems
-    : navItems.filter((item) => item.key !== 'topics')
 
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -156,17 +154,15 @@ export function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-white dark:bg-app-black">
-      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-app-surface lg:flex">
         <SidebarContent
           activeNav={activeNav}
-          visibleNavItems={visibleNavItems}
           userName={userName}
+          supervisorName={supervisorName}
           onSignOut={onSignOut}
         />
       </aside>
 
-      {/* Mobile drawer */}
       {mobileMenuOpen && (
         <>
           <button
@@ -178,8 +174,8 @@ export function DashboardLayout({
           <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,18rem)] flex-col border-r border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-app-surface lg:hidden">
             <SidebarContent
               activeNav={activeNav}
-              visibleNavItems={visibleNavItems}
               userName={userName}
+              supervisorName={supervisorName}
               onSignOut={onSignOut}
               onNavigate={closeMobileMenu}
               showCloseButton
@@ -204,8 +200,8 @@ export function DashboardLayout({
               <h1 className="truncate text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">{title}</h1>
               <div className="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
-                <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold capitalize text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800 sm:px-3">
-                  Student
+                <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800 sm:px-3">
+                  Supervisor
                 </span>
               </div>
             </div>
@@ -216,10 +212,9 @@ export function DashboardLayout({
 
         <TeamOgFooter className="border-t border-slate-100 py-4 dark:border-slate-800 lg:py-6" />
 
-        {/* Mobile bottom navigation */}
         <nav className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur-md dark:border-slate-700 dark:bg-app-surface/95 lg:hidden">
           <div className="flex items-center justify-around gap-1">
-            {visibleNavItems.map(({ key, label, to, icon: Icon }) => (
+            {navItems.map(({ key, label, to, icon: Icon }) => (
               <NavLink
                 key={key}
                 to={to}
@@ -233,15 +228,7 @@ export function DashboardLayout({
                 }
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                <span className="max-w-full truncate text-center leading-tight">
-                  {key === 'topics'
-                    ? 'Topics'
-                    : key === 'project'
-                      ? 'Project'
-                      : key === 'reviews'
-                        ? 'Reviews'
-                        : label.split(' ')[0]}
-                </span>
+                <span className="max-w-full truncate text-center leading-tight">{label}</span>
               </NavLink>
             ))}
           </div>

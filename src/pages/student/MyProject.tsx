@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { BookOpen } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
+import { TeamReviewsCard } from '@/components/reviews/TeamReviewsCard'
+import { SupervisorNotice } from '@/components/student/SupervisorNotice'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Card } from '@/components/ui/Card'
 import {
@@ -16,9 +18,11 @@ function MyProjectContent({ context }: { context: StudentContext }) {
   const canSelect = canSelectProject(team, selectionBlocked)
   const blocked = isSelectionBlocked(team, selectionBlocked)
 
+  let projectSection: React.ReactNode
+
   if (!selectedProject) {
     if (!canSelect && blocked) {
-      return (
+      projectSection = (
         <Card padding="lg" className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-center">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Project selection closed</h3>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
@@ -26,12 +30,11 @@ function MyProjectContent({ context }: { context: StudentContext }) {
               ? 'Project selection is blocked for your team. Please contact your administrator.'
               : 'The administrator has temporarily closed project selection for all teams. Please check back later.'}
           </p>
+          <SupervisorNotice supervisorName={team.supervisor_name} />
         </Card>
       )
-    }
-
-    if (!canSelect) {
-      return (
+    } else if (!canSelect) {
+      projectSection = (
         <Card padding="lg" className="border-violet-200 bg-violet-50 dark:bg-violet-950/50 text-center">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Project assigned</h3>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
@@ -41,26 +44,24 @@ function MyProjectContent({ context }: { context: StudentContext }) {
           </p>
         </Card>
       )
+    } else {
+      projectSection = (
+        <Card padding="lg" className="border-2 border-dashed border-slate-300 dark:border-slate-600 py-10 text-center">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No project selected yet</h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Your team has not selected a project. Browse available topics to get started.
+          </p>
+          <Link
+            to="/student/topics"
+            className="mt-6 inline-flex rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-primary-700"
+          >
+            Browse Available Topics
+          </Link>
+        </Card>
+      )
     }
-
-    return (
-      <Card padding="lg" className="border-2 border-dashed border-slate-300 dark:border-slate-600 py-10 text-center">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No project selected yet</h3>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Your team has not selected a project. Browse available topics to get started.
-        </p>
-        <Link
-          to="/student/topics"
-          className="mt-6 inline-flex rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-primary-700"
-        >
-          Browse Available Topics
-        </Link>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
+  } else {
+    projectSection = (
       <Card padding="lg" className="border-2 border-emerald-200 dark:border-emerald-800">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -111,6 +112,13 @@ function MyProjectContent({ context }: { context: StudentContext }) {
             : 'Your selection is final and cannot be changed.'}
         </p>
       </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {projectSection}
+      <TeamReviewsCard teamId={team.id} />
     </div>
   )
 }

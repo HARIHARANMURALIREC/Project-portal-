@@ -11,6 +11,7 @@ dist/
 
 # Data files (may contain PII)
 data/*.xlsx
+data/supervisor-teacher-logins.csv
 
 # OS
 .DS_Store

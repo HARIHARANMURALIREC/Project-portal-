@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { TeamMemberCard } from '@/components/student/TeamMemberCard'
+import { TeamReviewsCard } from '@/components/reviews/TeamReviewsCard'
+import { SupervisorNotice } from '@/components/student/SupervisorNotice'
 import { Card } from '@/components/ui/Card'
 import { getProjects } from '@/lib/studentApi'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
@@ -226,6 +228,9 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
               ? 'Project selection is blocked for your team. Please contact your administrator.'
               : 'The administrator has temporarily closed project selection for all teams. Please check back later.'}
           </p>
+          <div className="mx-auto mt-4 max-w-md text-left">
+            <SupervisorNotice supervisorName={team.supervisor_name} />
+          </div>
         </Card>
       ) : (
         <Card padding="lg" className="border-2 border-dashed border-slate-300 dark:border-slate-600 py-8 text-center">
@@ -246,6 +251,8 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
           )}
         </Card>
       )}
+
+      <TeamReviewsCard teamId={team.id} compact />
     </div>
   )
 }

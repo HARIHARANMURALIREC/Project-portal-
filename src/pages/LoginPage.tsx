@@ -9,12 +9,14 @@ import {
   supabase,
   isSupabaseConfigured,
   supabaseConfigError,
-  resolveLoginEmail,
+  resolveCoordinatorLoginEmail,
+  resolveSupervisorLoginEmail,
   normalizeTeamCode,
   studentAuthCredentials,
 } from '@/lib/supabase'
 import { fetchPortalOpen } from '@/lib/portal'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
+import { teacherHomePath } from '@/lib/teacherRoutes'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -32,15 +34,21 @@ const studentLoginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 })
 
-const staffLoginSchema = z.object({
-  identifier: z.string().min(1, 'Email is required'),
+const coordinatorLoginSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
+})
+
+const supervisorLoginSchema = z.object({
+  identifier: z.string().min(1, 'Supervisor email is required').email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 })
 
 type StudentLoginForm = z.infer<typeof studentLoginSchema>
-type StaffLoginForm = z.infer<typeof staffLoginSchema>
+type CoordinatorLoginForm = z.infer<typeof coordinatorLoginSchema>
+type SupervisorLoginForm = z.infer<typeof supervisorLoginSchema>
 
-type LoginMode = 'student' | 'staff'
+type LoginMode = 'student' | 'coordinator' | 'supervisor'
 
 async function verifyStudentTeam(teamId: string): Promise<boolean> {
   const { data: member, error } = await supabase
@@ -77,8 +85,12 @@ export function LoginPage() {
     resolver: zodResolver(studentLoginSchema),
   })
 
-  const staffForm = useForm<StaffLoginForm>({
-    resolver: zodResolver(staffLoginSchema),
+  const coordinatorForm = useForm<CoordinatorLoginForm>({
+    resolver: zodResolver(coordinatorLoginSchema),
+  })
+
+  const supervisorForm = useForm<SupervisorLoginForm>({
+    resolver: zodResolver(supervisorLoginSchema),
   })
 
   useEffect(() => {
@@ -88,7 +100,7 @@ export function LoginPage() {
         return
       }
       if (profile.role === 'teacher') {
-        navigate('/teacher', { replace: true })
+        navigate(teacherHomePath(profile), { replace: true })
         return
       }
       if (profile.role === 'student') {
@@ -144,7 +156,7 @@ export function LoginPage() {
     toast.success('Signed in successfully')
   }
 
-  async function onStaffSubmit(data: StaffLoginForm) {
+  async function onCoordinatorSubmit(data: CoordinatorLoginForm) {
     if (!isSupabaseConfigured) {
       toast.error(supabaseConfigError ?? 'Supabase is not configured.')
       return
@@ -152,7 +164,42 @@ export function LoginPage() {
 
     let email: string
     try {
-      email = resolveLoginEmail(data.identifier)
+      email = resolveCoordinatorLoginEmail(data.email)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Invalid email')
+      return
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: data.password,
+    })
+
+    if (error) {
+      const isInvalidKey =
+        error.status === 401 ||
+        error.message.toLowerCase().includes('invalid api key')
+      const hint = isInvalidKey
+        ? ' Supabase API key is wrong on this deployment. In Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon public key only), then redeploy.'
+        : error.message === 'Invalid login credentials'
+          ? ' Check your coordinator email and password.'
+          : ''
+      toast.error(error.message + hint)
+      return
+    }
+
+    toast.success('Signed in successfully')
+  }
+
+  async function onSupervisorSubmit(data: SupervisorLoginForm) {
+    if (!isSupabaseConfigured) {
+      toast.error(supabaseConfigError ?? 'Supabase is not configured.')
+      return
+    }
+
+    let email: string
+    try {
+      email = resolveSupervisorLoginEmail(data.identifier)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Invalid login ID')
       return
@@ -170,7 +217,7 @@ export function LoginPage() {
       const hint = isInvalidKey
         ? ' Supabase API key is wrong on this deployment. In Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon public key only), then redeploy.'
         : error.message === 'Invalid login credentials'
-          ? ' Check your email and password.'
+          ? ' Check your supervisor email and password.'
           : ''
       toast.error(error.message + hint)
       return
@@ -217,7 +264,7 @@ export function LoginPage() {
 
             {studentPortalClosed && (
               <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-3 py-2 text-left text-xs text-red-900 dark:text-red-200">
-                The portal is currently closed. Student login is disabled. Teachers and administrators can still sign in.
+                The portal is currently closed. Student login is disabled. Coordinators, supervisors, and administrators can still sign in.
               </div>
             )}
 
@@ -225,7 +272,7 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setMode('student')}
-                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+                className={`flex-1 rounded-md px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
                   mode === 'student'
                     ? 'bg-white text-violet-700 shadow-sm dark:bg-app-surface dark:text-violet-300'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
@@ -235,14 +282,25 @@ export function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('staff')}
-                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
-                  mode === 'staff'
+                onClick={() => setMode('coordinator')}
+                className={`flex-1 rounded-md px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
+                  mode === 'coordinator'
                     ? 'bg-white text-violet-700 shadow-sm dark:bg-app-surface dark:text-violet-300'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
-                Teacher
+                Coordinator
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('supervisor')}
+                className={`flex-1 rounded-md px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
+                  mode === 'supervisor'
+                    ? 'bg-white text-violet-700 shadow-sm dark:bg-app-surface dark:text-violet-300'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                Supervisor
               </button>
             </div>
 
@@ -279,31 +337,60 @@ export function LoginPage() {
                 </Button>
               </form>
               )
-            ) : (
-              <form onSubmit={staffForm.handleSubmit(onStaffSubmit)} className="space-y-4">
+            ) : mode === 'coordinator' ? (
+              <form onSubmit={coordinatorForm.handleSubmit(onCoordinatorSubmit)} className="space-y-4">
                 <Input
                   label="Email"
+                  type="email"
                   autoComplete="username"
-                  error={staffForm.formState.errors.identifier?.message}
-                  {...staffForm.register('identifier')}
+                  error={coordinatorForm.formState.errors.email?.message}
+                  {...coordinatorForm.register('email')}
                 />
 
                 <Input
                   label="Password"
                   type="password"
                   autoComplete="current-password"
-                  error={staffForm.formState.errors.password?.message}
-                  {...staffForm.register('password')}
+                  error={coordinatorForm.formState.errors.password?.message}
+                  {...coordinatorForm.register('password')}
                 />
 
                 <Button
                   type="submit"
                   fullWidth
                   size="lg"
-                  disabled={staffForm.formState.isSubmitting || !isSupabaseConfigured}
+                  disabled={coordinatorForm.formState.isSubmitting || !isSupabaseConfigured}
                   className="mt-2"
                 >
-                  {staffForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
+                  {coordinatorForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={supervisorForm.handleSubmit(onSupervisorSubmit)} className="space-y-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  autoComplete="username"
+                  error={supervisorForm.formState.errors.identifier?.message}
+                  {...supervisorForm.register('identifier')}
+                />
+
+                <Input
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  error={supervisorForm.formState.errors.password?.message}
+                  {...supervisorForm.register('password')}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  size="lg"
+                  disabled={supervisorForm.formState.isSubmitting || !isSupabaseConfigured}
+                  className="mt-2"
+                >
+                  {supervisorForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>
             )}

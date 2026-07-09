@@ -1,6 +1,6 @@
 /**
  * Create or update the lead coordinator account (Baburathinam) only.
- * Does not touch supervisor @teacher.portal accounts.
+ * Does not touch faculty supervisor (@rajalakshmi.edu.in) accounts.
  *
  * Usage:
  *   npm run setup-teacher
@@ -31,7 +31,7 @@ async function main() {
   })
 
   console.log(`Lead coordinator only: ${TEACHER_EMAIL}`)
-  console.log('Supervisor @teacher.portal accounts are not modified.')
+  console.log('Faculty supervisor accounts are not modified.')
   if (dryRun) {
     console.log('(dry-run — no changes)')
     return

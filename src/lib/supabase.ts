@@ -46,8 +46,9 @@ export const supabase = createClient(
 )
 
 export const STUDENT_EMAIL_DOMAIN = '@student.portal'
-export const TEACHER_EMAIL_DOMAIN = '@teacher.portal'
 export const FACULTY_EMAIL_DOMAIN = '@rajalakshmi.edu.in'
+
+const LEGACY_SUPERVISOR_DOMAIN = '@teacher.portal'
 
 /** Lead coordinator — separate from per-supervisor faculty accounts. */
 export const LEAD_TEACHER_EMAIL = 'baburathinam@rec.edu'
@@ -75,14 +76,17 @@ export function resolveLoginEmail(identifier: string): string {
   return regNoToEmail(trimmed)
 }
 
-/** Coordinator login (e.g. baburathinam@rec.edu) — not supervisor @teacher.portal accounts. */
+/** Coordinator login (e.g. baburathinam@rec.edu) — not faculty supervisor accounts. */
 export function resolveCoordinatorLoginEmail(identifier: string): string {
   const trimmed = identifier.trim().toLowerCase()
   if (!trimmed.includes('@')) {
     throw new Error('Enter your full coordinator email (e.g. baburathinam@rec.edu)')
   }
-  if (trimmed.endsWith(TEACHER_EMAIL_DOMAIN)) {
-    throw new Error('Supervisor accounts sign in on the Supervisor tab')
+  if (trimmed.endsWith(LEGACY_SUPERVISOR_DOMAIN)) {
+    throw new Error('Supervisor accounts use @rajalakshmi.edu.in — sign in on the Supervisor tab')
+  }
+  if (trimmed.endsWith(FACULTY_EMAIL_DOMAIN)) {
+    throw new Error('Faculty supervisors sign in on the Supervisor tab')
   }
   return trimmed
 }
@@ -95,7 +99,7 @@ function normalizeFacultyEmail(email: string): string {
   return normalized
 }
 
-/** Per-supervisor teacher login (faculty @rajalakshmi.edu.in email). */
+/** Supervisor login — faculty @rajalakshmi.edu.in email only. */
 export function resolveSupervisorLoginEmail(identifier: string): string {
   const trimmed = identifier.trim().toLowerCase()
   if (!trimmed.includes('@')) {
@@ -104,14 +108,15 @@ export function resolveSupervisorLoginEmail(identifier: string): string {
 
   const email = normalizeFacultyEmail(trimmed)
 
+  if (email.endsWith(LEGACY_SUPERVISOR_DOMAIN)) {
+    throw new Error('@teacher.portal logins are no longer supported. Use your @rajalakshmi.edu.in email.')
+  }
+
   if (email === LEAD_TEACHER_EMAIL || email.endsWith('@rec.edu')) {
     throw new Error('Coordinator accounts sign in on the Coordinator tab')
   }
 
-  if (
-    !email.endsWith(FACULTY_EMAIL_DOMAIN) &&
-    !email.endsWith(TEACHER_EMAIL_DOMAIN)
-  ) {
+  if (!email.endsWith(FACULTY_EMAIL_DOMAIN)) {
     throw new Error(`Supervisor email must be a faculty address (${FACULTY_EMAIL_DOMAIN})`)
   }
 

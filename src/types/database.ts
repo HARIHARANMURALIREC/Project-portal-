@@ -6,6 +6,18 @@ export interface Profile {
   reg_no: string | null
   supervisor_name: string | null
   full_name: string | null
+  password_changed_at?: string | null
+}
+
+export interface SupervisorLoginStatus {
+  id: string
+  full_name: string | null
+  supervisor_name: string | null
+  email: string
+  last_sign_in_at: string | null
+  password_changed_at: string | null
+  has_logged_in: boolean
+  password_changed: boolean
 }
 
 export interface Batch {

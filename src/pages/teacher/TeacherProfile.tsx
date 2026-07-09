@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { markSupervisorPasswordChanged } from '@/lib/adminSupervisors'
 
 const changePasswordSchema = z
   .object({
@@ -62,6 +63,10 @@ function TeacherProfileContent() {
         toast.error(updateError.message)
         return
       }
+
+      await markSupervisorPasswordChanged().catch((err) => {
+        console.error('Failed to record password change:', err)
+      })
 
       passwordForm.reset()
       toast.success('Password updated successfully')

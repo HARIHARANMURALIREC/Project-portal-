@@ -22,6 +22,8 @@
     "setup-teacher": "tsx scripts/setup-teacher.ts",
     "setup-supervisor-teachers": "tsx scripts/setup-supervisor-teachers.ts",
     "setup-supervisor-teachers:dry-run": "tsx scripts/setup-supervisor-teachers.ts --dry-run",
+    "remove-teacher-portal-accounts": "tsx scripts/remove-teacher-portal-accounts.ts",
+    "remove-teacher-portal-accounts:dry-run": "tsx scripts/remove-teacher-portal-accounts.ts --dry-run",
     "apply-rls-fix": "tsx scripts/apply-rls-fix.ts",
     "apply-migration": "tsx scripts/apply-migration.ts"
   },

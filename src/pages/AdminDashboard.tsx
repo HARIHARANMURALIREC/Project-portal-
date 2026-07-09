@@ -12,8 +12,9 @@ import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card, StatCard } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
-import type { Batch, PortalSettings, TeamWithDetails } from '@/types/database'
+import type { Batch, PortalSettings, SupervisorLoginStatus, TeamWithDetails } from '@/types/database'
 import { sortTeamMembers } from '@/lib/teamSort'
+import { fetchSupervisorLoginStatus } from '@/lib/adminSupervisors'
 
 export function AdminDashboard() {
   const { profile, signOut } = useAuth()
@@ -74,6 +75,20 @@ export function AdminDashboard() {
     refetchInterval: POLL_INTERVALS.adminData,
     refetchOnWindowFocus: true,
   })
+
+  const { data: supervisorStatus = [], isLoading: supervisorsLoading } = useQuery({
+    queryKey: ['admin-supervisor-status'],
+    queryFn: fetchSupervisorLoginStatus,
+    refetchInterval: POLL_INTERVALS.adminData,
+    refetchOnWindowFocus: true,
+  })
+
+  const supervisorStats = useMemo(() => {
+    const total = supervisorStatus.length
+    const loggedIn = supervisorStatus.filter((s) => s.has_logged_in).length
+    const passwordChanged = supervisorStatus.filter((s) => s.password_changed).length
+    return { total, loggedIn, passwordChanged, notLoggedIn: total - loggedIn, defaultPassword: total - passwordChanged }
+  }, [supervisorStatus])
 
   const blockedTeams = useMemo(
     () => teams.filter((team) => team.selection_blocked),
@@ -336,6 +351,60 @@ export function AdminDashboard() {
             Force unlock all
           </Button>
         </div>
+      </Card>
+
+      {/* Supervisor login & password status */}
+      <Card className="mb-8" padding="none">
+        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Supervisor Activity</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Who has signed in and changed their default password.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-violet-100 px-2.5 py-1 font-medium text-violet-800 dark:bg-violet-950/60 dark:text-violet-300">
+                {supervisorStats.loggedIn}/{supervisorStats.total} logged in
+              </span>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                {supervisorStats.passwordChanged}/{supervisorStats.total} changed password
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="max-h-96 overflow-auto">
+          {supervisorsLoading ? (
+            <div className="p-4"><TableSkeleton rows={6} /></div>
+          ) : supervisorStatus.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              No supervisor accounts found.
+            </p>
+          ) : (
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+              <thead className="sticky top-0 z-10 bg-white dark:bg-app-surface shadow-sm">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Supervisor</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Email</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Logged in</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Last sign-in</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Password changed</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Changed at</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {supervisorStatus.map((row) => (
+                  <SupervisorStatusRow key={row.id} row={row} />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {!supervisorsLoading && supervisorStatus.length > 0 && (
+          <div className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-app-surface px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
+            {supervisorStats.notLoggedIn} not logged in yet · {supervisorStats.defaultPassword} still on default password
+          </div>
+        )}
       </Card>
 
       {/* Blocked teams */}
@@ -604,5 +673,39 @@ export function AdminDashboard() {
         </div>
       )}
     </Layout>
+  )
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return '—'
+  return new Date(value).toLocaleString()
+}
+
+function SupervisorStatusRow({ row }: { row: SupervisorLoginStatus }) {
+  return (
+    <tr className="bg-white dark:bg-app-surface">
+      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+        {row.supervisor_name ?? row.full_name ?? '—'}
+      </td>
+      <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">{row.email}</td>
+      <td className="px-4 py-3">
+        <StatusBadge
+          status={row.has_logged_in ? 'open' : 'pending'}
+          label={row.has_logged_in ? 'Yes' : 'No'}
+        />
+      </td>
+      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+        {formatDateTime(row.last_sign_in_at)}
+      </td>
+      <td className="px-4 py-3">
+        <StatusBadge
+          status={row.password_changed ? 'open' : 'locked'}
+          label={row.password_changed ? 'Yes' : 'No'}
+        />
+      </td>
+      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+        {formatDateTime(row.password_changed_at)}
+      </td>
+    </tr>
   )
 }

@@ -1,5 +1,6 @@
 import type { TeamMember } from '@/types/database'
 import type { TeamMemberFields } from '@/types/student'
+import { sortTeamMembers } from '@/lib/teamSort'
 
 export const STUDENT_DEPARTMENT = 'IT'
 export const STUDENT_YEAR = '4th Year'
@@ -52,7 +53,7 @@ export function getTeamMembersForDisplay(
   batchId: string,
 ): TeamMemberFields[] {
   const academic = getStudentAcademicInfo(batchId)
-  const sorted = [...members].sort((a, b) => a.reg_no.localeCompare(b.reg_no))
+  const sorted = sortTeamMembers(members)
   return sorted.map((m) => memberToFields(m, academic))
 }
 

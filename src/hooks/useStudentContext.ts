@@ -31,7 +31,7 @@ export function useStudentContext() {
         .from('team_members')
         .select('*')
         .eq('team_id', team.id)
-        .order('reg_no')
+        .order('reg_no', { ascending: true })
 
       const { data: settings } = await supabase
         .from('portal_settings')

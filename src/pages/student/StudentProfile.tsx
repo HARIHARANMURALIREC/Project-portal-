@@ -2,6 +2,7 @@ import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { Card } from '@/components/ui/Card'
 import { useAuth } from '@/hooks/useAuth'
 import { getStudentAcademicInfo } from '@/lib/mappers'
+import { sortTeamMembers } from '@/lib/teamSort'
 import type { StudentContext } from '@/types/student'
 
 function StudentProfileContent({ context }: { context: StudentContext }) {
@@ -10,6 +11,7 @@ function StudentProfileContent({ context }: { context: StudentContext }) {
   const academic = getStudentAcademicInfo(batch.id)
 
   const currentMember = members.find((m) => m.user_id === profile?.id)
+  const sortedMembers = sortTeamMembers(members)
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -56,7 +58,7 @@ function StudentProfileContent({ context }: { context: StudentContext }) {
       <Card padding="lg" className="border-slate-200 dark:border-slate-700">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Team Members</h3>
         <ul className="mt-4 space-y-3">
-          {members.map((m) => (
+          {sortedMembers.map((m) => (
             <li
               key={m.id}
               className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/80"

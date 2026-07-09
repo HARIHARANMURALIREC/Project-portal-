@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
 import { isLeadCoordinator } from '@/lib/teacherRoutes'
+import { withSortedTeams } from '@/lib/teamSort'
 import { useAuth } from '@/hooks/useAuth'
 import { Layout } from '@/components/Layout'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
@@ -33,10 +34,10 @@ export function CoordinatorDashboard() {
           projects!teams_selected_project_id_fkey (id, title, domain, abstract),
           batches (id, name)
         `)
-        .order('batch_id')
-        .order('team_no')
+        .order('batch_id', { ascending: true })
+        .order('team_no', { ascending: true })
       if (error) throw error
-      return data as TeamWithDetails[]
+      return withSortedTeams((data ?? []) as TeamWithDetails[])
     },
   })
 

@@ -1,11 +1,14 @@
 import type { TeamWithDetails } from '@/types/database'
+import { sortTeamMembers } from '@/lib/teamSort'
 
 export function memberNames(team: TeamWithDetails): string {
-  return team.team_members?.map((m) => m.name).join(', ') ?? '—'
+  if (!team.team_members?.length) return '—'
+  return sortTeamMembers(team.team_members).map((m) => m.name).join(', ')
 }
 
 export function memberRegNos(team: TeamWithDetails): string {
-  return team.team_members?.map((m) => m.reg_no).join(', ') ?? '—'
+  if (!team.team_members?.length) return '—'
+  return sortTeamMembers(team.team_members).map((m) => m.reg_no).join(', ')
 }
 
 interface AllocationTableProps {

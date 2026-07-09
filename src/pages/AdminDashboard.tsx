@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
+import { withSortedTeams } from '@/lib/teamSort'
 import { useAuth } from '@/hooks/useAuth'
 import { Layout } from '@/components/Layout'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -12,6 +13,7 @@ import { Card, StatCard } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import type { Batch, PortalSettings, TeamWithDetails } from '@/types/database'
+import { sortTeamMembers } from '@/lib/teamSort'
 
 export function AdminDashboard() {
   const { profile, signOut } = useAuth()
@@ -64,10 +66,10 @@ export function AdminDashboard() {
           projects!teams_selected_project_id_fkey (id, title, domain, abstract),
           batches (id, name)
         `)
-        .order('batch_id')
-        .order('team_no')
+        .order('batch_id', { ascending: true })
+        .order('team_no', { ascending: true })
       if (error) throw error
-      return data as TeamWithDetails[]
+      return withSortedTeams((data ?? []) as TeamWithDetails[])
     },
     refetchInterval: POLL_INTERVALS.adminData,
     refetchOnWindowFocus: true,
@@ -231,7 +233,7 @@ export function AdminDashboard() {
       Batch: team.batches?.name ?? team.batch_id,
       'Team No': team.team_no,
       'Batch Code': team.batch_code,
-      Members: team.team_members?.map((m) => `${m.name} (${m.reg_no})`).join(', ') ?? '',
+      Members: sortTeamMembers(team.team_members ?? []).map((m) => `${m.name} (${m.reg_no})`).join(', '),
       Supervisor: team.supervisor_name ?? '',
       'Project Title': team.projects?.title ?? 'Pending',
       Domain: team.projects?.domain ?? '',
@@ -378,7 +380,7 @@ export function AdminDashboard() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {team.team_members?.map((m) => (
+                      {sortTeamMembers(team.team_members ?? []).map((m) => (
                         <div key={m.id} className="text-xs">
                           {m.name} <span className="text-slate-400 dark:text-slate-500">({m.reg_no})</span>
                         </div>
@@ -498,7 +500,7 @@ export function AdminDashboard() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {team.team_members?.map((m) => (
+                      {sortTeamMembers(team.team_members ?? []).map((m) => (
                         <div key={m.id} className="text-xs">
                           {m.name} <span className="text-slate-400 dark:text-slate-500">({m.reg_no})</span>
                         </div>

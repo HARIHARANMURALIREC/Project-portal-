@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/hooks/useAuth'
 import { useTeacherTeams } from '@/hooks/useTeacherTeams'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
+import { sortTeamMembers } from '@/lib/teamSort'
 import {
   REVIEW_TITLE_OPTIONS,
   completeTeamReview,
@@ -92,7 +93,9 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
     },
   })
 
-  const memberList = team.team_members?.map((m) => m.name).join(', ') ?? '—'
+  const memberList = team.team_members?.length
+    ? sortTeamMembers(team.team_members).map((m) => m.name).join(', ')
+    : '—'
   const pendingCount = sortedReviews.filter((r) => !isReviewCompleted(r)).length
 
   return (

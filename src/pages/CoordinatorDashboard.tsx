@@ -18,6 +18,7 @@ import {
   memberNames,
   memberRegNos,
 } from '@/components/teacher/AllocationTable'
+import { CoordinatorReviewScheduler } from '@/components/coordinator/CoordinatorReviewScheduler'
 import type { TeamWithDetails } from '@/types/database'
 
 export function CoordinatorDashboard() {
@@ -116,6 +117,10 @@ export function CoordinatorDashboard() {
           Export to Excel
         </Button>
       </div>
+
+      <section className="mb-8">
+        <CoordinatorReviewScheduler />
+      </section>
 
       {isLoading ? (
         <TableSkeleton rows={8} />

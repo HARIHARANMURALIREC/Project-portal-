@@ -83,6 +83,31 @@ export interface TeamReview {
   created_by: string
   created_at: string
   updated_at: string
+  schedule_group_id?: string | null
+}
+
+export interface ReviewScheduleSummary {
+  schedule_group_id: string
+  review_title: string
+  scheduled_at: string
+  remarks: string | null
+  teams_count: number
+  completed_count: number
+  created_at: string
+}
+
+export type ReviewFileType = 'pdf' | 'ppt'
+
+export interface TeamReviewFile {
+  id: string
+  team_id: string
+  team_review_id: string
+  file_type: ReviewFileType
+  storage_path: string
+  original_filename: string
+  uploaded_by: string
+  created_at: string
+  updated_at: string
 }
 
 export interface ClaimProjectResult {

@@ -6,7 +6,15 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
 import { isReviewCompleted } from '@/lib/reviews'
 
-export function TeamReviewsCard({ teamId, compact = false }: { teamId: string; compact?: boolean }) {
+export function TeamReviewsCard({
+  teamId,
+  supervisorName,
+  compact = false,
+}: {
+  teamId: string
+  supervisorName?: string | null
+  compact?: boolean
+}) {
   const { data: reviews = [], isLoading } = useTeamReviews(teamId)
   const upcoming = reviews.filter((r) => !isReviewCompleted(r))
   const nextReview = upcoming[0]
@@ -41,6 +49,12 @@ export function TeamReviewsCard({ teamId, compact = false }: { teamId: string; c
           </Link>
         )}
       </div>
+
+      {supervisorName && (
+        <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
+          Project supervisor: <span className="font-semibold text-slate-900 dark:text-slate-100">{supervisorName}</span>
+        </p>
+      )}
 
       {nextReview && (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">

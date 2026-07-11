@@ -7,11 +7,13 @@ import {
   LogOut,
   Menu,
   X,
+  UsersRound,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { getBatchLabel } from '@/lib/batchCoordinators'
 import type { TeacherNavKey } from '@/types/teacher'
 
 interface TeacherDashboardLayoutProps {
@@ -19,15 +21,29 @@ interface TeacherDashboardLayoutProps {
   activeNav: TeacherNavKey
   userName?: string
   supervisorName?: string
+  batchId?: string | null
   onSignOut: () => void
   children: React.ReactNode
 }
 
-const navItems: { key: TeacherNavKey; label: string; to: string; icon: typeof LayoutDashboard }[] = [
-  { key: 'dashboard', label: 'Dashboard', to: '/teacher', icon: LayoutDashboard },
-  { key: 'reviews', label: 'Reviews', to: '/teacher/reviews', icon: CalendarCheck },
-  { key: 'profile', label: 'Profile', to: '/teacher/profile', icon: User },
-]
+function buildNavItems(batchId?: string | null) {
+  const items: { key: TeacherNavKey; label: string; to: string; icon: typeof LayoutDashboard }[] = [
+    { key: 'dashboard', label: 'Dashboard', to: '/teacher', icon: LayoutDashboard },
+  ]
+  if (batchId) {
+    items.push({
+      key: 'batch',
+      label: getBatchLabel(batchId),
+      to: '/teacher/batch',
+      icon: UsersRound,
+    })
+  }
+  items.push(
+    { key: 'reviews', label: 'Reviews', to: '/teacher/reviews', icon: CalendarCheck },
+    { key: 'profile', label: 'Profile', to: '/teacher/profile', icon: User },
+  )
+  return items
+}
 
 function UserAvatar({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || 'T'
@@ -50,6 +66,7 @@ interface SidebarContentProps {
   activeNav: TeacherNavKey
   userName?: string
   supervisorName?: string
+  batchId?: string | null
   onSignOut: () => void
   onNavigate?: () => void
   showCloseButton?: boolean
@@ -60,11 +77,14 @@ function SidebarContent({
   activeNav,
   userName,
   supervisorName,
+  batchId,
   onSignOut,
   onNavigate,
   showCloseButton,
   onClose,
 }: SidebarContentProps) {
+  const navItems = buildNavItems(batchId)
+
   return (
     <>
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-700">
@@ -87,6 +107,12 @@ function SidebarContent({
       {supervisorName && (
         <p className="border-b border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
           Supervisor: <span className="font-medium text-slate-700 dark:text-slate-300">{supervisorName}</span>
+          {batchId && (
+            <>
+              {' · '}
+              Section: <span className="font-medium text-slate-700 dark:text-slate-300">{getBatchLabel(batchId)}</span>
+            </>
+          )}
         </p>
       )}
 
@@ -133,11 +159,13 @@ export function TeacherDashboardLayout({
   activeNav,
   userName,
   supervisorName,
+  batchId,
   onSignOut,
   children,
 }: TeacherDashboardLayoutProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const navItems = buildNavItems(batchId)
 
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -159,6 +187,7 @@ export function TeacherDashboardLayout({
           activeNav={activeNav}
           userName={userName}
           supervisorName={supervisorName}
+          batchId={batchId}
           onSignOut={onSignOut}
         />
       </aside>
@@ -176,6 +205,7 @@ export function TeacherDashboardLayout({
               activeNav={activeNav}
               userName={userName}
               supervisorName={supervisorName}
+              batchId={batchId}
               onSignOut={onSignOut}
               onNavigate={closeMobileMenu}
               showCloseButton

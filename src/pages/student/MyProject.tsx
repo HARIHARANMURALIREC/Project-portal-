@@ -118,7 +118,7 @@ function MyProjectContent({ context }: { context: StudentContext }) {
   return (
     <div className="space-y-6">
       {projectSection}
-      <TeamReviewsCard teamId={team.id} />
+      <TeamReviewsCard teamId={team.id} supervisorName={team.supervisor_name} />
     </div>
   )
 }

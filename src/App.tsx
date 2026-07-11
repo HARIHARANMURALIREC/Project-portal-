@@ -6,6 +6,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { AdminDashboard } from '@/pages/AdminDashboard'
 import { CoordinatorDashboard } from '@/pages/CoordinatorDashboard'
 import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
+import { TeacherBatchDashboard } from '@/pages/teacher/TeacherBatchDashboard'
 import { TeacherReviews } from '@/pages/teacher/TeacherReviews'
 import { TeacherProfile } from '@/pages/teacher/TeacherProfile'
 import { StudentDashboard } from '@/pages/student/StudentDashboard'
@@ -56,6 +57,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/batch"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherBatchDashboard />
               </ProtectedRoute>
             }
           />

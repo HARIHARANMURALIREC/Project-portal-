@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { TeacherDashboardLayout } from '@/components/layout/TeacherDashboardLayout'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/hooks/useAuth'
+import { getBatchIdForCoordinator } from '@/lib/batchCoordinators'
 import { isLeadCoordinator } from '@/lib/teacherRoutes'
 import type { TeacherNavKey } from '@/types/teacher'
 
@@ -13,6 +14,7 @@ interface TeacherPageShellProps {
 
 export function TeacherPageShell({ title, activeNav, children }: TeacherPageShellProps) {
   const { profile, signOut, loading } = useAuth()
+  const batchId = getBatchIdForCoordinator(profile)
 
   if (loading) {
     return (
@@ -32,6 +34,7 @@ export function TeacherPageShell({ title, activeNav, children }: TeacherPageShel
         title={title}
         activeNav={activeNav}
         userName={profile?.full_name ?? undefined}
+        batchId={batchId}
         onSignOut={signOut}
       >
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950/40">
@@ -48,6 +51,7 @@ export function TeacherPageShell({ title, activeNav, children }: TeacherPageShel
       activeNav={activeNav}
       userName={profile.full_name ?? undefined}
       supervisorName={profile.supervisor_name}
+      batchId={batchId}
       onSignOut={signOut}
     >
       {children}

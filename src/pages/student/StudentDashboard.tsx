@@ -252,7 +252,7 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
         </Card>
       )}
 
-      <TeamReviewsCard teamId={team.id} compact />
+      <TeamReviewsCard teamId={team.id} supervisorName={team.supervisor_name} compact />
     </div>
   )
 }

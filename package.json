@@ -14,6 +14,8 @@
     "sync-teams:dry-run": "tsx scripts/sync-teams-from-excel.ts --dry-run",
     "sync-supervisors": "tsx scripts/sync-supervisors-from-report.ts",
     "sync-supervisors:dry-run": "tsx scripts/sync-supervisors-from-report.ts --dry-run",
+    "sync-reviewers": "tsx scripts/sync-reviewers-from-excel.ts",
+    "sync-reviewers:dry-run": "tsx scripts/sync-reviewers-from-excel.ts --dry-run",
     "assign-blocked-projects": "tsx scripts/assign-blocked-team-projects.ts",
     "assign-blocked-projects:dry-run": "tsx scripts/assign-blocked-team-projects.ts --dry-run",
     "normalize-domains": "tsx scripts/normalize-domains.ts",

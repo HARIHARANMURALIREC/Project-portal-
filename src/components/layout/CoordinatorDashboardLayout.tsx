@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  CalendarCheck,
-  ClipboardCheck,
-  User,
+  FileStack,
+  ClipboardList,
   LogOut,
   Menu,
   X,
-  UsersRound,
   PanelLeftClose,
   PanelLeft,
 } from 'lucide-react'
@@ -16,42 +14,31 @@ import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { getBatchLabel } from '@/lib/batchCoordinators'
 import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed'
-import type { TeacherNavKey } from '@/types/teacher'
 
-interface TeacherDashboardLayoutProps {
+export type CoordinatorNavKey = 'overview' | 'uploads' | 'marks'
+
+interface CoordinatorDashboardLayoutProps {
   title: string
-  activeNav: TeacherNavKey
+  activeNav: CoordinatorNavKey
   userName?: string
-  supervisorName?: string
-  batchId?: string | null
   onSignOut: () => void
   children: React.ReactNode
 }
 
-function buildNavItems(batchId?: string | null) {
-  const items: { key: TeacherNavKey; label: string; to: string; icon: typeof LayoutDashboard }[] = [
-    { key: 'dashboard', label: 'Dashboard', to: '/teacher', icon: LayoutDashboard },
-  ]
-  if (batchId) {
-    items.push({
-      key: 'batch',
-      label: getBatchLabel(batchId),
-      to: '/teacher/batch',
-      icon: UsersRound,
-    })
-  }
-  items.push(
-    { key: 'reviews', label: 'Reviews', to: '/teacher/reviews', icon: CalendarCheck },
-    { key: 'reviewer', label: 'Reviewer', to: '/teacher/reviewer', icon: ClipboardCheck },
-    { key: 'profile', label: 'Profile', to: '/teacher/profile', icon: User },
-  )
-  return items
-}
+const navItems: {
+  key: CoordinatorNavKey
+  label: string
+  to: string
+  icon: typeof LayoutDashboard
+}[] = [
+  { key: 'overview', label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard },
+  { key: 'uploads', label: 'Uploads', to: '/coordinator/uploads', icon: FileStack },
+  { key: 'marks', label: 'Marks', to: '/coordinator/marks', icon: ClipboardList },
+]
 
 function UserAvatar({ name }: { name: string }) {
-  const initial = name.trim().charAt(0).toUpperCase() || 'T'
+  const initial = name.trim().charAt(0).toUpperCase() || 'C'
   return (
     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800">
       {initial}
@@ -70,10 +57,8 @@ function navLinkClass(active: boolean, collapsed: boolean) {
 }
 
 interface SidebarContentProps {
-  activeNav: TeacherNavKey
+  activeNav: CoordinatorNavKey
   userName?: string
-  supervisorName?: string
-  batchId?: string | null
   onSignOut: () => void
   onNavigate?: () => void
   showCloseButton?: boolean
@@ -85,8 +70,6 @@ interface SidebarContentProps {
 function SidebarContent({
   activeNav,
   userName,
-  supervisorName,
-  batchId,
   onSignOut,
   onNavigate,
   showCloseButton,
@@ -94,8 +77,6 @@ function SidebarContent({
   collapsed = false,
   onToggleCollapse,
 }: SidebarContentProps) {
-  const navItems = buildNavItems(batchId)
-
   return (
     <>
       <div
@@ -121,15 +102,9 @@ function SidebarContent({
         )}
       </div>
 
-      {supervisorName && !collapsed && (
+      {!collapsed && (
         <p className="border-b border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          Supervisor: <span className="font-medium text-slate-700 dark:text-slate-300">{supervisorName}</span>
-          {batchId && (
-            <>
-              {' · '}
-              Section: <span className="font-medium text-slate-700 dark:text-slate-300">{getBatchLabel(batchId)}</span>
-            </>
-          )}
+          Role: <span className="font-medium text-slate-700 dark:text-slate-300">Lead Coordinator</span>
         </p>
       )}
 
@@ -138,7 +113,7 @@ function SidebarContent({
           <NavLink
             key={key}
             to={to}
-            end={key === 'dashboard'}
+            end={key === 'overview'}
             title={label}
             onClick={onNavigate}
             className={({ isActive }) => navLinkClass(isActive || activeNav === key, collapsed)}
@@ -191,19 +166,16 @@ function SidebarContent({
   )
 }
 
-export function TeacherDashboardLayout({
+export function CoordinatorDashboardLayout({
   title,
   activeNav,
   userName,
-  supervisorName,
-  batchId,
   onSignOut,
   children,
-}: TeacherDashboardLayoutProps) {
+}: CoordinatorDashboardLayoutProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { collapsed, toggleCollapsed } = useSidebarCollapsed()
-  const navItems = buildNavItems(batchId)
 
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -228,8 +200,6 @@ export function TeacherDashboardLayout({
         <SidebarContent
           activeNav={activeNav}
           userName={userName}
-          supervisorName={supervisorName}
-          batchId={batchId}
           onSignOut={onSignOut}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
@@ -248,8 +218,6 @@ export function TeacherDashboardLayout({
             <SidebarContent
               activeNav={activeNav}
               userName={userName}
-              supervisorName={supervisorName}
-              batchId={batchId}
               onSignOut={onSignOut}
               onNavigate={closeMobileMenu}
               showCloseButton
@@ -288,7 +256,7 @@ export function TeacherDashboardLayout({
               <div className="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
                 <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800 sm:px-3">
-                  Supervisor
+                  Coordinator
                 </span>
               </div>
             </div>
@@ -305,7 +273,7 @@ export function TeacherDashboardLayout({
               <NavLink
                 key={key}
                 to={to}
-                end={key === 'dashboard'}
+                end={key === 'overview'}
                 className={({ isActive }) =>
                   `flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px] font-medium sm:text-xs ${
                     isActive || activeNav === key

@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { TeacherPageShell } from '@/components/teacher/TeacherPageShell'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
@@ -8,22 +6,14 @@ import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { useAuth } from '@/hooks/useAuth'
-import { useTeacherTeams } from '@/hooks/useTeacherTeams'
+import { useReviewerTeams } from '@/hooks/useReviewerTeams'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
 import { sortTeamMembers } from '@/lib/teamSort'
-import {
-  completeTeamReview,
-  formatReviewDateTime,
-  isReviewCompleted,
-  reopenTeamReview,
-} from '@/lib/reviews'
-import type { TeamReview, TeamWithDetails } from '@/types/database'
+import { formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
+import { isZerothReview } from '@/lib/reviewMarks'
+import type { TeamWithDetails } from '@/types/database'
 
-function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
+function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
   const { data: reviews = [], isLoading: reviewsLoading } = useTeamReviews(team.id)
   const [expanded, setExpanded] = useState(false)
 
@@ -31,41 +21,10 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
     (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
   )
 
-  const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['teacher-teams'] })
-    void queryClient.invalidateQueries({ queryKey: ['team-reviews', team.id] })
-    void queryClient.invalidateQueries({ queryKey: ['coordinator-review-schedules'] })
-  }
-
-  const completeMutation = useMutation({
-    mutationFn: async (review: TeamReview) => {
-      if (!user?.id) throw new Error('Not signed in')
-      return completeTeamReview(review.id, user.id)
-    },
-    onSuccess: () => {
-      toast.success('Review marked as completed')
-      invalidate()
-    },
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to complete review')
-    },
-  })
-
-  const reopenMutation = useMutation({
-    mutationFn: (reviewId: string) => reopenTeamReview(reviewId),
-    onSuccess: () => {
-      toast.success('Review reopened')
-      invalidate()
-    },
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to reopen review')
-    },
-  })
-
   const memberList = team.team_members?.length
     ? sortTeamMembers(team.team_members).map((m) => m.name).join(', ')
     : '—'
-  const pendingCount = sortedReviews.filter((r) => !isReviewCompleted(r)).length
+  const zerothPending = sortedReviews.filter((r) => isZerothReview(r.review_title)).length
 
   return (
     <Card padding="none" className="overflow-hidden">
@@ -81,13 +40,13 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
             </span>
             {team.supervisor_name && (
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600">
-                {team.supervisor_name}
+                Supervisor: {team.supervisor_name}
               </span>
             )}
             <span className="text-sm text-slate-600 dark:text-slate-300">{sortedReviews.length} review(s)</span>
-            {pendingCount > 0 && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                {pendingCount} upcoming
+            {zerothPending > 0 && (
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
+                Zeroth Review
               </span>
             )}
           </div>
@@ -108,61 +67,34 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
                   className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                         Scheduled: {formatReviewDateTime(review.scheduled_at)}
+                        {isReviewCompleted(review) && review.completed_at
+                          ? ` · Completed ${formatReviewDateTime(review.completed_at)}`
+                          : ''}
                       </p>
-                      {isReviewCompleted(review) && review.completed_at && (
-                        <p className="mt-0.5 text-sm text-emerald-700 dark:text-emerald-300">
-                          Completed: {formatReviewDateTime(review.completed_at)}
-                        </p>
-                      )}
                       {review.remarks && (
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Notes: {review.remarks}</p>
                       )}
                       <ReviewFileDownloads teamId={team.id} reviewId={review.id} />
-                      {team.reviewer_name && (
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                          Reviewer: <span className="font-medium">{team.reviewer_name}</span>
-                        </p>
-                      )}
                       <ZerothReviewMarksPanel
                         teamId={team.id}
                         review={review}
                         members={team.team_members ?? []}
-                        markerRole="supervisor"
+                        markerRole="reviewer"
                         canEdit
                       />
                     </div>
                     <ReviewStatusBadge review={review} />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {!isReviewCompleted(review) ? (
-                      <Button
-                        size="sm"
-                        onClick={() => completeMutation.mutate(review)}
-                        disabled={completeMutation.isPending}
-                      >
-                        Mark completed
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => reopenMutation.mutate(review.id)}
-                        disabled={reopenMutation.isPending}
-                      >
-                        Reopen
-                      </Button>
-                    )}
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              No common reviews scheduled yet. The coordinator will set the review date and time for all teams.
+              No common reviews scheduled yet for this team.
             </p>
           )}
         </div>
@@ -171,34 +103,28 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
   )
 }
 
-function TeacherReviewsContent() {
-  const { data: teams = [], isLoading } = useTeacherTeams()
+function TeacherReviewerContent() {
+  const { data: teams = [], isLoading } = useReviewerTeams()
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600 dark:text-slate-300">
-        Review date and time are set by the coordinator for all teams. For Zeroth Review, enter rubric marks
-        per student (Novelty, Abstract, SDG). Reviewers enter marks separately on the Reviewer page. Coordinators
-        see both; students see neither. Mark a review as completed when your team has finished it.
-      </p>
-
       {isLoading ? (
         <TableSkeleton rows={6} />
       ) : teams.length === 0 ? (
         <Card padding="lg" className="text-center text-sm text-slate-500 dark:text-slate-400">
-          No teams assigned to you yet.
+          No teams assigned to you as reviewer yet.
         </Card>
       ) : (
-        teams.map((team) => <TeamReviewPanel key={team.id} team={team} />)
+        teams.map((team) => <ReviewerTeamPanel key={team.id} team={team} />)
       )}
     </div>
   )
 }
 
-export function TeacherReviews() {
+export function TeacherReviewer() {
   return (
-    <TeacherPageShell title="Reviews" activeNav="reviews">
-      <TeacherReviewsContent />
+    <TeacherPageShell title="Reviewer" activeNav="reviewer">
+      <TeacherReviewerContent />
     </TeacherPageShell>
   )
 }

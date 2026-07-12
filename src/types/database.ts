@@ -45,6 +45,7 @@ export interface Team {
   team_no: number
   batch_code: string
   supervisor_name: string | null
+  reviewer_name: string | null
   selected_project_id: string | null
   locked_by_user_id: string | null
   locked_at: string | null
@@ -110,10 +111,14 @@ export interface TeamReviewFile {
   updated_at: string
 }
 
-export interface TeamReviewMarks {
+export type ReviewMarkerRole = 'supervisor' | 'reviewer'
+
+export interface StudentReviewMarks {
   id: string
   team_review_id: string
   team_id: string
+  team_member_id: string
+  role: ReviewMarkerRole
   novelty_idea: number
   abstract_content: number
   sdg_goal_mapping: number
@@ -122,6 +127,9 @@ export interface TeamReviewMarks {
   created_at: string
   updated_at: string
 }
+
+/** @deprecated Use StudentReviewMarks — kept temporarily for type migrations */
+export type TeamReviewMarks = StudentReviewMarks
 
 export interface ClaimProjectResult {
   success: boolean

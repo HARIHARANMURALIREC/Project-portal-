@@ -120,7 +120,9 @@ export interface ScheduleTeamStatus {
   team_id: string
   batch_code: string
   supervisor_name: string | null
+  reviewer_name: string | null
   completed_at: string | null
+  team_members: { id: string; reg_no: string; name: string }[]
 }
 
 export async function fetchScheduleTeamStatus(scheduleGroupId: string): Promise<ScheduleTeamStatus[]> {
@@ -130,7 +132,12 @@ export async function fetchScheduleTeamStatus(scheduleGroupId: string): Promise<
       id,
       team_id,
       completed_at,
-      teams!inner (batch_code, supervisor_name)
+      teams!inner (
+        batch_code,
+        supervisor_name,
+        reviewer_name,
+        team_members (id, reg_no, name)
+      )
     `)
     .eq('schedule_group_id', scheduleGroupId)
     .order('team_id')
@@ -138,14 +145,22 @@ export async function fetchScheduleTeamStatus(scheduleGroupId: string): Promise<
   if (error) throw error
 
   const rows = (data ?? []).map((row) => {
-    const team = row.teams as { batch_code: string; supervisor_name: string | null } | { batch_code: string; supervisor_name: string | null }[]
+    type TeamJoin = {
+      batch_code: string
+      supervisor_name: string | null
+      reviewer_name: string | null
+      team_members: { id: string; reg_no: string; name: string }[] | null
+    }
+    const team = row.teams as TeamJoin | TeamJoin[]
     const teamRow = Array.isArray(team) ? team[0] : team
     return {
       id: row.id as string,
       team_id: row.team_id as string,
       batch_code: teamRow?.batch_code ?? '—',
       supervisor_name: teamRow?.supervisor_name ?? null,
+      reviewer_name: teamRow?.reviewer_name ?? null,
       completed_at: row.completed_at as string | null,
+      team_members: teamRow?.team_members ?? [],
     }
   })
 

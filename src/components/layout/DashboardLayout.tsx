@@ -9,11 +9,14 @@ import {
   LogOut,
   Menu,
   X,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed'
 import type { StudentNavKey } from '@/types/student'
 
 interface DashboardLayoutProps {
@@ -42,8 +45,10 @@ function UserAvatar({ name }: { name: string }) {
   )
 }
 
-function navLinkClass(active: boolean) {
-  return `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+function navLinkClass(active: boolean, collapsed: boolean) {
+  return `flex items-center rounded-lg py-2.5 text-sm font-medium transition ${
+    collapsed ? 'justify-center px-2' : 'gap-3 px-3'
+  } ${
     active
       ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-neutral-900 dark:hover:text-slate-100'
@@ -58,6 +63,8 @@ interface SidebarContentProps {
   onNavigate?: () => void
   showCloseButton?: boolean
   onClose?: () => void
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 function SidebarContent({
@@ -68,13 +75,21 @@ function SidebarContent({
   onNavigate,
   showCloseButton,
   onClose,
+  collapsed = false,
+  onToggleCollapse,
 }: SidebarContentProps) {
   return (
     <>
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div
+        className={`flex items-center border-b border-slate-200 py-4 dark:border-slate-700 ${
+          collapsed ? 'justify-center px-2' : 'justify-between px-4'
+        }`}
+      >
+        <div className={`flex min-w-0 items-center ${collapsed ? '' : 'gap-2.5'}`}>
           <AppLogo size="sm" showCollegeName={false} showPortalTitle={false} />
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.portalTitle}</p>
+          {!collapsed && (
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.portalTitle}</p>
+          )}
         </div>
         {showCloseButton && onClose && (
           <button
@@ -88,38 +103,58 @@ function SidebarContent({
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className={`flex-1 space-y-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
         {visibleNavItems.map(({ key, label, to, icon: Icon }) => (
           <NavLink
             key={key}
             to={to}
             end={key === 'dashboard'}
+            title={label}
             onClick={onNavigate}
-            className={({ isActive }) => navLinkClass(isActive || activeNav === key)}
+            className={({ isActive }) => navLinkClass(isActive || activeNav === key, collapsed)}
           >
             <Icon className="h-5 w-5 shrink-0" />
-            {label}
+            {!collapsed && label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="border-t border-slate-200 p-4 dark:border-slate-700">
+      <div className={`border-t border-slate-200 dark:border-slate-700 ${collapsed ? 'p-2' : 'p-4'}`}>
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className={`mb-2 flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-neutral-900 dark:hover:text-slate-100 ${
+              collapsed ? 'justify-center px-2' : 'gap-3 px-3'
+            }`}
+          >
+            {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            {!collapsed && 'Collapse'}
+          </button>
+        )}
         {userName && (
-          <div className="mb-3 flex items-center gap-3 px-2">
+          <div className={`mb-3 flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-2'}`} title={userName}>
             <UserAvatar name={userName} />
-            <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{userName}</p>
+            {!collapsed && (
+              <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{userName}</p>
+            )}
           </div>
         )}
         <button
           type="button"
+          title="Logout"
           onClick={() => {
             onNavigate?.()
             onSignOut()
           }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+          className={`flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 ${
+            collapsed ? 'justify-center px-2' : 'gap-3 px-3'
+          }`}
         >
           <LogOut className="h-5 w-5" />
-          Logout
+          {!collapsed && 'Logout'}
         </button>
       </div>
     </>
@@ -136,6 +171,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed()
 
   const visibleNavItems = showTopicsNav
     ? navItems
@@ -156,17 +192,21 @@ export function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-white dark:bg-app-black">
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-app-surface lg:flex">
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-slate-200 bg-white transition-[width] duration-200 dark:border-slate-700 dark:bg-app-surface lg:flex ${
+          collapsed ? 'w-16' : 'w-64'
+        }`}
+      >
         <SidebarContent
           activeNav={activeNav}
           visibleNavItems={visibleNavItems}
           userName={userName}
           onSignOut={onSignOut}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
         />
       </aside>
 
-      {/* Mobile drawer */}
       {mobileMenuOpen && (
         <>
           <button
@@ -189,7 +229,11 @@ export function DashboardLayout({
         </>
       )}
 
-      <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-64">
+      <div
+        className={`flex min-h-screen w-full flex-1 flex-col transition-[padding] duration-200 ${
+          collapsed ? 'lg:pl-16' : 'lg:pl-64'
+        }`}
+      >
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-md dark:border-slate-700 dark:bg-app-surface/95 sm:py-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -199,6 +243,15 @@ export function DashboardLayout({
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-neutral-900 dark:hover:text-slate-100 lg:inline-flex"
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
             </button>
             <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
               <h1 className="truncate text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">{title}</h1>
@@ -216,7 +269,6 @@ export function DashboardLayout({
 
         <TeamOgFooter className="border-t border-slate-100 py-4 dark:border-slate-800 lg:py-6" />
 
-        {/* Mobile bottom navigation */}
         <nav className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur-md dark:border-slate-700 dark:bg-app-surface/95 lg:hidden">
           <div className="flex items-center justify-around gap-1">
             {visibleNavItems.map(({ key, label, to, icon: Icon }) => (

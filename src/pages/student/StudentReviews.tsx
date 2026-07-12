@@ -27,10 +27,19 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
           <span className="font-mono text-xs">{context.team.batch_code}_ZerothReview_2026-07-15.pdf</span>).
           Rubric marks are entered by your supervisor and are not shown to students.
         </p>
-        {context.team.supervisor_name && (
-          <p className="mb-4 rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
-            Project supervisor: <span className="font-semibold">{context.team.supervisor_name}</span>
-          </p>
+        {(context.team.supervisor_name || context.team.reviewer_name) && (
+          <div className="mb-4 space-y-2">
+            {context.team.supervisor_name && (
+              <p className="rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+                Project supervisor: <span className="font-semibold">{context.team.supervisor_name}</span>
+              </p>
+            )}
+            {context.team.reviewer_name && (
+              <p className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-sky-900 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+                Reviewer: <span className="font-semibold">{context.team.reviewer_name}</span>
+              </p>
+            )}
+          </div>
         )}
         {isLoading ? (
           <div className="flex justify-center py-8">

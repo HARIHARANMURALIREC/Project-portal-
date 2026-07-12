@@ -8,6 +8,7 @@ import {
   BookOpen,
   AlertCircle,
   GraduationCap,
+  ClipboardCheck,
 } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { TeamMemberCard } from '@/components/student/TeamMemberCard'
@@ -67,6 +68,12 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
             <p className="text-sm text-slate-500 dark:text-slate-400">Project Supervisor</p>
             <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {team.supervisor_name ?? '—'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Reviewer</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {team.reviewer_name ?? '—'}
             </p>
           </div>
           <div>
@@ -166,6 +173,20 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
           </div>
         </Card>
 
+        <Card padding="lg" className="border-sky-100 dark:border-sky-800 bg-gradient-to-br from-sky-50 dark:from-sky-950/50 to-white dark:to-app-surface ring-1 ring-sky-50 dark:ring-sky-900 sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950/60">
+              <ClipboardCheck className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Reviewer</p>
+              <p className="truncate text-lg font-bold text-slate-900 dark:text-slate-100">
+                {team.reviewer_name ?? 'Not assigned'}
+              </p>
+            </div>
+          </div>
+        </Card>
+
         <Card padding="lg" className="border-slate-200 dark:border-slate-700 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-app-surface">
@@ -202,6 +223,11 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
             {team.supervisor_name && (
               <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
                 Project supervisor: <span className="font-medium">{team.supervisor_name}</span>
+              </p>
+            )}
+            {team.reviewer_name && (
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                Reviewer: <span className="font-medium">{team.reviewer_name}</span>
               </p>
             )}
             {team.locked_at && !isSupervisorAssignedProject(team) && (

@@ -18,7 +18,7 @@ import {
   type ScheduleTeamStatus,
 } from '@/lib/reviews'
 import type { ReviewScheduleSummary } from '@/types/database'
-import { ZerothReviewMarksReadonly, useReviewMarksMap } from '@/components/reviews/ZerothReviewMarks'
+import { ZerothReviewMarksPanel, useStudentReviewMarksMap } from '@/components/reviews/ZerothReviewMarks'
 import { isZerothReview, ZEROTH_REVIEW_TOTAL_MAX } from '@/lib/reviewMarks'
 
 function SupervisorBreakdown({
@@ -35,7 +35,17 @@ function SupervisorBreakdown({
 
   const reviewIds = useMemo(() => teams.map((t) => t.id), [teams])
   const showMarks = isZerothReview(reviewTitle)
-  const { data: marksMap = {} } = useReviewMarksMap(reviewIds, showMarks && !isLoading)
+  const { data: marksRows = [] } = useStudentReviewMarksMap(reviewIds, showMarks && !isLoading)
+
+  const marksByReview = useMemo(() => {
+    const map = new Map<string, typeof marksRows>()
+    for (const row of marksRows) {
+      const list = map.get(row.team_review_id) ?? []
+      list.push(row)
+      map.set(row.team_review_id, list)
+    }
+    return map
+  }, [marksRows])
 
   const bySupervisor = useMemo(() => {
     const map = new Map<string, ScheduleTeamStatus[]>()
@@ -60,8 +70,8 @@ function SupervisorBreakdown({
     <div className="mt-4 space-y-3">
       {bySupervisor.map(([supervisor, supervisorTeams]) => {
         const completed = supervisorTeams.filter((t) => t.completed_at).length
-        const marked = showMarks
-          ? supervisorTeams.filter((t) => marksMap[t.id]).length
+        const markedTeams = showMarks
+          ? supervisorTeams.filter((t) => (marksByReview.get(t.id)?.length ?? 0) > 0).length
           : 0
         return (
           <div
@@ -74,12 +84,30 @@ function SupervisorBreakdown({
               </p>
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {completed}/{supervisorTeams.length} completed
-                {showMarks ? ` · ${marked}/${supervisorTeams.length} marked` : ''}
+                {showMarks ? ` · ${markedTeams}/${supervisorTeams.length} with marks` : ''}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {supervisorTeams.map((team) => {
-                const marks = marksMap[team.id]
+                const marks = marksByReview.get(team.id) ?? []
+                const supAvg =
+                  marks.filter((m) => m.role === 'supervisor').length > 0
+                    ? (
+                        marks
+                          .filter((m) => m.role === 'supervisor')
+                          .reduce((s, m) => s + Number(m.total), 0) /
+                        marks.filter((m) => m.role === 'supervisor').length
+                      ).toFixed(1)
+                    : null
+                const revAvg =
+                  marks.filter((m) => m.role === 'reviewer').length > 0
+                    ? (
+                        marks
+                          .filter((m) => m.role === 'reviewer')
+                          .reduce((s, m) => s + Number(m.total), 0) /
+                        marks.filter((m) => m.role === 'reviewer').length
+                      ).toFixed(1)
+                    : null
                 return (
                   <span
                     key={team.id}
@@ -89,31 +117,48 @@ function SupervisorBreakdown({
                         : 'bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800'
                     }`}
                     title={
-                      marks
-                        ? `${team.batch_code}: ${marks.total}/${ZEROTH_REVIEW_TOTAL_MAX}`
+                      supAvg || revAvg
+                        ? `${team.batch_code}: supervisor avg ${supAvg ?? '—'} / reviewer avg ${revAvg ?? '—'} (max ${ZEROTH_REVIEW_TOTAL_MAX})`
                         : team.completed_at
                           ? 'Completed'
                           : 'Pending'
                     }
                   >
                     {team.batch_code}
-                    {marks ? ` (${marks.total})` : ''}
+                    {supAvg || revAvg ? ` (S${supAvg ?? '—'}·R${revAvg ?? '—'})` : ''}
                   </span>
                 )
               })}
             </div>
             {showMarks && (
-              <div className="mt-3 space-y-2">
-                {supervisorTeams
-                  .filter((t) => marksMap[t.id])
-                  .map((team) => (
-                    <div key={`marks-${team.id}`}>
-                      <p className="mb-1 font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        {team.batch_code}
-                      </p>
-                      <ZerothReviewMarksReadonly marks={marksMap[team.id]} />
-                    </div>
-                  ))}
+              <div className="mt-3 space-y-3">
+                {supervisorTeams.map((team) => (
+                  <div key={`marks-${team.id}`}>
+                    <p className="mb-1 font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {team.batch_code}
+                      {team.reviewer_name ? ` · Reviewer: ${team.reviewer_name}` : ''}
+                    </p>
+                    <ZerothReviewMarksPanel
+                      teamId={team.team_id}
+                      review={{
+                        id: team.id,
+                        team_id: team.team_id,
+                        review_title: reviewTitle,
+                        scheduled_at: '',
+                        completed_at: team.completed_at,
+                        completed_by: null,
+                        remarks: null,
+                        created_by: '',
+                        created_at: '',
+                        updated_at: '',
+                      }}
+                      members={team.team_members}
+                      markerRole="supervisor"
+                      canEdit={false}
+                      showBothRoles
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>

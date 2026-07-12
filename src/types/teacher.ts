@@ -1,1 +1,1 @@
-export type TeacherNavKey = 'dashboard' | 'batch' | 'reviews' | 'profile'
+export type TeacherNavKey = 'dashboard' | 'batch' | 'reviews' | 'reviewer' | 'profile'

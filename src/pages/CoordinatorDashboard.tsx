@@ -1,15 +1,8 @@
 import { useMemo } from 'react'
-import { Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
-import { supabase } from '@/lib/supabase'
-import { isLeadCoordinator } from '@/lib/teacherRoutes'
-import { withSortedTeams } from '@/lib/teamSort'
-import { useAuth } from '@/hooks/useAuth'
-import { Layout } from '@/components/Layout'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import {
@@ -19,27 +12,14 @@ import {
   memberRegNos,
 } from '@/components/teacher/AllocationTable'
 import { CoordinatorReviewScheduler } from '@/components/coordinator/CoordinatorReviewScheduler'
+import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
+import { fetchAllCoordinatorTeams } from '@/lib/coordinatorData'
 import type { TeamWithDetails } from '@/types/database'
 
 export function CoordinatorDashboard() {
-  const { profile, signOut, loading: authLoading } = useAuth()
-
   const { data: teams = [], isLoading } = useQuery({
     queryKey: ['coordinator-teams'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('teams')
-        .select(`
-          *,
-          team_members (id, reg_no, name),
-          projects!teams_selected_project_id_fkey (id, title, domain, abstract),
-          batches (id, name)
-        `)
-        .order('batch_id', { ascending: true })
-        .order('team_no', { ascending: true })
-      if (error) throw error
-      return withSortedTeams((data ?? []) as TeamWithDetails[])
-    },
+    queryFn: fetchAllCoordinatorTeams,
   })
 
   const allocatedTeams = useMemo(
@@ -53,20 +33,22 @@ export function CoordinatorDashboard() {
   )
 
   const exportToExcel = () => {
-    const allocationRows = allocatedTeams.map((team) => ({
+    const allocationRows = allocatedTeams.map((team: TeamWithDetails) => ({
       'Team ID': team.batch_code,
       Names: memberNames(team),
       'Reg No': memberRegNos(team),
       Supervisor: team.supervisor_name ?? '',
+      Reviewer: team.reviewer_name ?? '',
       Domain: team.projects?.domain ?? '',
       Project: team.projects?.title ?? '',
     }))
 
-    const pendingRows = teamsWithoutProjects.map((team) => ({
+    const pendingRows = teamsWithoutProjects.map((team: TeamWithDetails) => ({
       'Team ID': team.batch_code,
       Names: memberNames(team),
       'Reg No': memberRegNos(team),
       Supervisor: team.supervisor_name ?? '',
+      Reviewer: team.reviewer_name ?? '',
       'Selection Blocked': team.selection_blocked ? 'Yes' : 'No',
     }))
 
@@ -77,27 +59,8 @@ export function CoordinatorDashboard() {
     toast.success('Export downloaded')
   }
 
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-app-black">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
-  if (!isLeadCoordinator(profile)) {
-    return <Navigate to="/teacher" replace />
-  }
-
   return (
-    <Layout
-      title="Coordinator Dashboard"
-      subtitle="All teams · project allotment overview"
-      userName={profile?.full_name ?? undefined}
-      role="coordinator"
-      showLogo={false}
-      onSignOut={signOut}
-    >
+    <CoordinatorPageShell title="Coordinator Dashboard" activeNav="overview">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">
           <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800 bg-white dark:bg-app-surface ring-1 ring-violet-50 dark:ring-violet-900">
@@ -147,6 +110,6 @@ export function CoordinatorDashboard() {
           </section>
         </div>
       )}
-    </Layout>
+    </CoordinatorPageShell>
   )
 }

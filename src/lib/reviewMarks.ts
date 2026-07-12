@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { TeamReviewMarks } from '@/types/database'
+import type { ReviewMarkerRole, StudentReviewMarks } from '@/types/database'
 
 export const ZEROTH_REVIEW_TITLE = 'Zeroth Review'
 
@@ -23,39 +23,42 @@ export function computeZerothTotal(input: {
   return Number((input.novelty_idea + input.abstract_content + input.sdg_goal_mapping).toFixed(1))
 }
 
-export async function fetchMarksForReview(teamReviewId: string): Promise<TeamReviewMarks | null> {
+export async function fetchStudentMarksForReview(teamReviewId: string): Promise<StudentReviewMarks[]> {
   const { data, error } = await supabase
-    .from('team_review_marks')
+    .from('student_review_marks')
     .select('*')
     .eq('team_review_id', teamReviewId)
-    .maybeSingle()
 
   if (error) throw error
-  return (data as TeamReviewMarks | null) ?? null
+  return (data ?? []) as StudentReviewMarks[]
 }
 
-export async function fetchMarksForReviews(teamReviewIds: string[]): Promise<TeamReviewMarks[]> {
+export async function fetchStudentMarksForReviews(teamReviewIds: string[]): Promise<StudentReviewMarks[]> {
   if (teamReviewIds.length === 0) return []
   const { data, error } = await supabase
-    .from('team_review_marks')
+    .from('student_review_marks')
     .select('*')
     .in('team_review_id', teamReviewIds)
 
   if (error) throw error
-  return (data ?? []) as TeamReviewMarks[]
+  return (data ?? []) as StudentReviewMarks[]
 }
 
-export async function upsertZerothMarks(input: {
+export async function upsertStudentZerothMarks(input: {
   teamReviewId: string
   teamId: string
+  teamMemberId: string
+  role: ReviewMarkerRole
   novelty_idea: number
   abstract_content: number
   sdg_goal_mapping: number
   markedBy: string
-}): Promise<TeamReviewMarks> {
+}): Promise<StudentReviewMarks> {
   const payload = {
     team_review_id: input.teamReviewId,
     team_id: input.teamId,
+    team_member_id: input.teamMemberId,
+    role: input.role,
     novelty_idea: input.novelty_idea,
     abstract_content: input.abstract_content,
     sdg_goal_mapping: input.sdg_goal_mapping,
@@ -64,27 +67,37 @@ export async function upsertZerothMarks(input: {
   }
 
   const { data: existing } = await supabase
-    .from('team_review_marks')
+    .from('student_review_marks')
     .select('id')
     .eq('team_review_id', input.teamReviewId)
+    .eq('team_member_id', input.teamMemberId)
+    .eq('role', input.role)
     .maybeSingle()
 
   if (existing?.id) {
     const { data, error } = await supabase
-      .from('team_review_marks')
+      .from('student_review_marks')
       .update(payload)
       .eq('id', existing.id)
       .select('*')
       .single()
     if (error) throw error
-    return data as TeamReviewMarks
+    return data as StudentReviewMarks
   }
 
   const { data, error } = await supabase
-    .from('team_review_marks')
+    .from('student_review_marks')
     .insert(payload)
     .select('*')
     .single()
   if (error) throw error
-  return data as TeamReviewMarks
+  return data as StudentReviewMarks
+}
+
+export function marksKey(teamMemberId: string, role: ReviewMarkerRole): string {
+  return `${teamMemberId}:${role}`
+}
+
+export function indexStudentMarks(rows: StudentReviewMarks[]): Record<string, StudentReviewMarks> {
+  return Object.fromEntries(rows.map((r) => [marksKey(r.team_member_id, r.role), r]))
 }

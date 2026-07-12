@@ -51,7 +51,8 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Review Submissions</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            PDF/PPT uploads and Zeroth Review marks for teams in this section (visible to supervisors and section coordinators; not to students).
+            PDF/PPT uploads and Zeroth Review marks (supervisor + reviewer, per student) for teams in this
+            section. Students cannot see marks.
           </p>
         </div>
         {expanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
@@ -79,6 +80,11 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
                         Supervisor: {team.supervisor_name}
                       </span>
                     )}
+                    {team.reviewer_name && (
+                      <span className="text-xs text-slate-600 dark:text-slate-300">
+                        Reviewer: {team.reviewer_name}
+                      </span>
+                    )}
                     <span className="text-xs text-slate-500 dark:text-slate-400">
                       {withFiles.length}/{reviews.length} review(s) have files
                     </span>
@@ -95,7 +101,14 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
                         </p>
                         <ReviewFileDownloads teamId={team.id} reviewId={review.id} />
                         {isZerothReview(review.review_title) && (
-                          <ZerothReviewMarksPanel teamId={team.id} review={review} canEdit={false} />
+                          <ZerothReviewMarksPanel
+                            teamId={team.id}
+                            review={review}
+                            members={team.team_members ?? []}
+                            markerRole="supervisor"
+                            canEdit={false}
+                            showBothRoles
+                          />
                         )}
                       </li>
                     ))}

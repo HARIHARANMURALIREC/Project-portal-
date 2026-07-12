@@ -2,6 +2,7 @@ import { CalendarCheck } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
 import { ReviewSubmissionPanel } from '@/components/reviews/ReviewSubmissionPanel'
+import { ZerothReviewRubricsInfo } from '@/components/reviews/ZerothReviewRubricsInfo'
 import { Card } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
@@ -25,7 +26,7 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
           The coordinator sets a common review date and time for all teams. Upload one PDF and one PPT per review.
           Filename must include team ID, review name, and date (example:{' '}
           <span className="font-mono text-xs">{context.team.batch_code}_ZerothReview_2026-07-15.pdf</span>).
-          Rubric marks are entered by your supervisor and are not shown to students.
+          For Zeroth Review you can see the rubrics below; your marks are not shown.
         </p>
         {(context.team.supervisor_name || context.team.reviewer_name) && (
           <div className="mb-4 space-y-2">
@@ -73,6 +74,7 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
                   </div>
                   <ReviewStatusBadge review={review} />
                 </div>
+                <ZerothReviewRubricsInfo reviewTitle={review.review_title} />
                 <ReviewSubmissionPanel
                   teamId={context.team.id}
                   batchCode={context.team.batch_code}

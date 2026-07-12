@@ -110,6 +110,19 @@ export interface TeamReviewFile {
   updated_at: string
 }
 
+export interface TeamReviewMarks {
+  id: string
+  team_review_id: string
+  team_id: string
+  novelty_idea: number
+  abstract_content: number
+  sdg_goal_mapping: number
+  total: number
+  marked_by: string
+  created_at: string
+  updated_at: string
+}
+
 export interface ClaimProjectResult {
   success: boolean
   message: string

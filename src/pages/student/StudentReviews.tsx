@@ -24,7 +24,8 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
         <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
           The coordinator sets a common review date and time for all teams. Upload one PDF and one PPT per review.
           Filename must include team ID, review name, and date (example:{' '}
-          <span className="font-mono text-xs">{context.team.batch_code}_Review1_2026-07-15.pdf</span>).
+          <span className="font-mono text-xs">{context.team.batch_code}_ZerothReview_2026-07-15.pdf</span>).
+          Rubric marks are entered by your supervisor and are not shown to students.
         </p>
         {context.team.supervisor_name && (
           <p className="mb-4 rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">

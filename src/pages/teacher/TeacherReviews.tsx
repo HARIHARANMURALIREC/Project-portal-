@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { TeacherPageShell } from '@/components/teacher/TeacherPageShell'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
+import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -121,6 +122,7 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Notes: {review.remarks}</p>
                       )}
                       <ReviewFileDownloads teamId={team.id} reviewId={review.id} />
+                      <ZerothReviewMarksPanel teamId={team.id} review={review} canEdit />
                     </div>
                     <ReviewStatusBadge review={review} />
                   </div>
@@ -164,7 +166,9 @@ function TeacherReviewsContent() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Review date and time are set by the coordinator for all teams. Mark a review as completed when your team has finished it.
+        Review date and time are set by the coordinator for all teams. For Zeroth Review, enter rubric marks
+        (Novelty, Abstract, SDG). Marks are visible to you and coordinators — not to students. Mark a review as
+        completed when your team has finished it.
       </p>
 
       {isLoading ? (

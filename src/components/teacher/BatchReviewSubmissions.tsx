@@ -3,8 +3,10 @@ import { useQueries } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
+import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
 import { fetchTeamReviews, formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
 import { fetchReviewFilesForTeam } from '@/lib/reviewFiles'
+import { isZerothReview } from '@/lib/reviewMarks'
 import type { TeamWithDetails } from '@/types/database'
 
 export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) {
@@ -49,7 +51,7 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Review Submissions</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            PDF and PPT uploads for teams in this section (visible to supervisors and section coordinators).
+            PDF/PPT uploads and Zeroth Review marks for teams in this section (visible to supervisors and section coordinators; not to students).
           </p>
         </div>
         {expanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
@@ -92,6 +94,9 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
                           </span>
                         </p>
                         <ReviewFileDownloads teamId={team.id} reviewId={review.id} />
+                        {isZerothReview(review.review_title) && (
+                          <ZerothReviewMarksPanel teamId={team.id} review={review} canEdit={false} />
+                        )}
                       </li>
                     ))}
                   </ul>

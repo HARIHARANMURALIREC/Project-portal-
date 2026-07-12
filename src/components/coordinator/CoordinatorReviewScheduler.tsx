@@ -18,12 +18,24 @@ import {
   type ScheduleTeamStatus,
 } from '@/lib/reviews'
 import type { ReviewScheduleSummary } from '@/types/database'
+import { ZerothReviewMarksReadonly, useReviewMarksMap } from '@/components/reviews/ZerothReviewMarks'
+import { isZerothReview, ZEROTH_REVIEW_TOTAL_MAX } from '@/lib/reviewMarks'
 
-function SupervisorBreakdown({ scheduleGroupId }: { scheduleGroupId: string }) {
+function SupervisorBreakdown({
+  scheduleGroupId,
+  reviewTitle,
+}: {
+  scheduleGroupId: string
+  reviewTitle: string
+}) {
   const { data: teams = [], isLoading } = useQuery({
     queryKey: ['schedule-team-status', scheduleGroupId],
     queryFn: () => fetchScheduleTeamStatus(scheduleGroupId),
   })
+
+  const reviewIds = useMemo(() => teams.map((t) => t.id), [teams])
+  const showMarks = isZerothReview(reviewTitle)
+  const { data: marksMap = {} } = useReviewMarksMap(reviewIds, showMarks && !isLoading)
 
   const bySupervisor = useMemo(() => {
     const map = new Map<string, ScheduleTeamStatus[]>()
@@ -48,6 +60,9 @@ function SupervisorBreakdown({ scheduleGroupId }: { scheduleGroupId: string }) {
     <div className="mt-4 space-y-3">
       {bySupervisor.map(([supervisor, supervisorTeams]) => {
         const completed = supervisorTeams.filter((t) => t.completed_at).length
+        const marked = showMarks
+          ? supervisorTeams.filter((t) => marksMap[t.id]).length
+          : 0
         return (
           <div
             key={supervisor}
@@ -59,23 +74,48 @@ function SupervisorBreakdown({ scheduleGroupId }: { scheduleGroupId: string }) {
               </p>
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {completed}/{supervisorTeams.length} completed
+                {showMarks ? ` · ${marked}/${supervisorTeams.length} marked` : ''}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {supervisorTeams.map((team) => (
-                <span
-                  key={team.id}
-                  className={`rounded-md px-2 py-0.5 font-mono text-xs font-semibold ring-1 ${
-                    team.completed_at
-                      ? 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800'
-                      : 'bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800'
-                  }`}
-                  title={team.completed_at ? 'Completed' : 'Pending'}
-                >
-                  {team.batch_code}
-                </span>
-              ))}
+              {supervisorTeams.map((team) => {
+                const marks = marksMap[team.id]
+                return (
+                  <span
+                    key={team.id}
+                    className={`rounded-md px-2 py-0.5 font-mono text-xs font-semibold ring-1 ${
+                      team.completed_at
+                        ? 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800'
+                        : 'bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800'
+                    }`}
+                    title={
+                      marks
+                        ? `${team.batch_code}: ${marks.total}/${ZEROTH_REVIEW_TOTAL_MAX}`
+                        : team.completed_at
+                          ? 'Completed'
+                          : 'Pending'
+                    }
+                  >
+                    {team.batch_code}
+                    {marks ? ` (${marks.total})` : ''}
+                  </span>
+                )
+              })}
             </div>
+            {showMarks && (
+              <div className="mt-3 space-y-2">
+                {supervisorTeams
+                  .filter((t) => marksMap[t.id])
+                  .map((team) => (
+                    <div key={`marks-${team.id}`}>
+                      <p className="mb-1 font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {team.batch_code}
+                      </p>
+                      <ZerothReviewMarksReadonly marks={marksMap[team.id]} />
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )
       })}
@@ -331,7 +371,12 @@ export function CoordinatorReviewScheduler() {
                           </Button>
                         </div>
                       </div>
-                      {expanded && <SupervisorBreakdown scheduleGroupId={schedule.schedule_group_id} />}
+                      {expanded && (
+                        <SupervisorBreakdown
+                          scheduleGroupId={schedule.schedule_group_id}
+                          reviewTitle={schedule.review_title}
+                        />
+                      )}
                     </>
                   )}
                 </li>

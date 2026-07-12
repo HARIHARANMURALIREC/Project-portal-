@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { ReviewScheduleSummary, TeamReview } from '@/types/database'
 
 export const REVIEW_TITLE_OPTIONS = [
+  'Zeroth Review',
   'Review 1',
   'Review 2',
   'Review 3',

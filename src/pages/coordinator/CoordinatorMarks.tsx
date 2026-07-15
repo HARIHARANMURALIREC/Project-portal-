@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Input, Select } from '@/components/ui/Input'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   fetchAllCoordinatorTeams,
@@ -15,9 +14,31 @@ import {
 } from '@/lib/coordinatorData'
 import { ZEROTH_REVIEW_TOTAL_MAX, marksKey, indexStudentMarks } from '@/lib/reviewMarks'
 import { sortTeamMembers } from '@/lib/teamSort'
+import { teamBatchOptions, uniqueSorted } from '@/lib/teamFilters'
+
+type MarkRow = {
+  teamCode: string
+  batchId: string
+  supervisor: string
+  reviewer: string
+  studentName: string
+  regNo: string
+  noveltyS: number | null
+  abstractS: number | null
+  sdgS: number | null
+  totalS: number | null
+  noveltyR: number | null
+  abstractR: number | null
+  sdgR: number | null
+  totalR: number | null
+}
 
 export function CoordinatorMarks() {
-  const [q, setQ] = useState('')
+  const [batchFilter, setBatchFilter] = useState('')
+  const [supervisorFilter, setSupervisorFilter] = useState('')
+  const [reviewerFilter, setReviewerFilter] = useState('')
+  const [markStatusFilter, setMarkStatusFilter] = useState('')
+  const [search, setSearch] = useState('')
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['coordinator-teams'],
@@ -34,6 +55,10 @@ export function CoordinatorMarks() {
 
   const isLoading = teamsLoading || reviewsLoading || marksLoading
 
+  const batches = useMemo(() => teamBatchOptions(teams), [teams])
+  const supervisors = useMemo(() => uniqueSorted(teams.map((t) => t.supervisor_name)), [teams])
+  const reviewers = useMemo(() => uniqueSorted(teams.map((t) => t.reviewer_name)), [teams])
+
   const reviewByTeam = useMemo(() => {
     const map = new Map<string, (typeof zerothReviews)[0]>()
     for (const r of zerothReviews) map.set(r.team_id, r)
@@ -43,21 +68,7 @@ export function CoordinatorMarks() {
   const marksIndex = useMemo(() => indexStudentMarks(marks), [marks])
 
   const rows = useMemo(() => {
-    const out: {
-      teamCode: string
-      supervisor: string
-      reviewer: string
-      studentName: string
-      regNo: string
-      noveltyS: number | null
-      abstractS: number | null
-      sdgS: number | null
-      totalS: number | null
-      noveltyR: number | null
-      abstractR: number | null
-      sdgR: number | null
-      totalR: number | null
-    }[] = []
+    const out: MarkRow[] = []
 
     for (const team of teams) {
       const review = reviewByTeam.get(team.id)
@@ -67,6 +78,7 @@ export function CoordinatorMarks() {
         const rev = review ? marksIndex[marksKey(member.id, 'reviewer')] : undefined
         out.push({
           teamCode: team.batch_code,
+          batchId: team.batch_id,
           supervisor: team.supervisor_name ?? '—',
           reviewer: team.reviewer_name ?? '—',
           studentName: member.name,
@@ -86,23 +98,43 @@ export function CoordinatorMarks() {
   }, [teams, reviewByTeam, marksIndex])
 
   const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase()
-    if (!term) return rows
-    return rows.filter(
-      (r) =>
+    const term = search.trim().toLowerCase()
+    return rows.filter((r) => {
+      if (batchFilter && r.batchId !== batchFilter) return false
+      if (supervisorFilter && r.supervisor !== supervisorFilter) return false
+      if (reviewerFilter && r.reviewer !== reviewerFilter) return false
+
+      if (markStatusFilter === 'both' && (r.totalS == null || r.totalR == null)) return false
+      if (markStatusFilter === 'supervisor_only' && (r.totalS == null || r.totalR != null)) return false
+      if (markStatusFilter === 'reviewer_only' && (r.totalR == null || r.totalS != null)) return false
+      if (markStatusFilter === 'supervisor_missing' && r.totalS != null) return false
+      if (markStatusFilter === 'reviewer_missing' && r.totalR != null) return false
+      if (markStatusFilter === 'neither' && (r.totalS != null || r.totalR != null)) return false
+
+      if (!term) return true
+      return (
         r.teamCode.toLowerCase().includes(term) ||
         r.studentName.toLowerCase().includes(term) ||
         r.regNo.toLowerCase().includes(term) ||
         r.supervisor.toLowerCase().includes(term) ||
-        r.reviewer.toLowerCase().includes(term),
-    )
-  }, [rows, q])
+        r.reviewer.toLowerCase().includes(term)
+      )
+    })
+  }, [rows, batchFilter, supervisorFilter, reviewerFilter, markStatusFilter, search])
 
   const stats = useMemo(() => {
-    const withSup = rows.filter((r) => r.totalS != null).length
-    const withRev = rows.filter((r) => r.totalR != null).length
-    return { students: rows.length, withSup, withRev }
-  }, [rows])
+    const withSup = filtered.filter((r) => r.totalS != null).length
+    const withRev = filtered.filter((r) => r.totalR != null).length
+    return { students: filtered.length, withSup, withRev }
+  }, [filtered])
+
+  const clearFilters = () => {
+    setBatchFilter('')
+    setSupervisorFilter('')
+    setReviewerFilter('')
+    setMarkStatusFilter('')
+    setSearch('')
+  }
 
   const exportExcel = () => {
     const exportRows = filtered.map((r) => ({
@@ -134,36 +166,84 @@ export function CoordinatorMarks() {
       <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
         Zeroth Review · supervisor and reviewer scores per student (max {ZEROTH_REVIEW_TOTAL_MAX} each)
       </p>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap gap-3">
-          <Card padding="sm" className="inline-flex items-center gap-2">
-            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.students}</span>
-            <span className="text-xs text-slate-500">students</span>
-          </Card>
-          <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800">
-            <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{stats.withSup}</span>
-            <span className="text-xs text-violet-700 dark:text-violet-300">supervisor marked</span>
-          </Card>
-          <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
-            <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withRev}</span>
-            <span className="text-xs text-sky-700 dark:text-sky-300">reviewer marked</span>
-          </Card>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="relative min-w-[220px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <div className="mb-4 flex flex-wrap gap-3">
+        <Card padding="sm" className="inline-flex items-center gap-2">
+          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.students}</span>
+          <span className="text-xs text-slate-500">students shown</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800">
+          <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{stats.withSup}</span>
+          <span className="text-xs text-violet-700 dark:text-violet-300">supervisor marked</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
+          <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withRev}</span>
+          <span className="text-xs text-sky-700 dark:text-sky-300">reviewer marked</span>
+        </Card>
+      </div>
+
+      <Card className="mb-4" padding="md">
+        <div className="flex flex-wrap items-end gap-3">
+          <Select label="Batch" value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)}>
+            <option value="">All batches</option>
+            {batches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Supervisor"
+            value={supervisorFilter}
+            onChange={(e) => setSupervisorFilter(e.target.value)}
+          >
+            <option value="">All supervisors</option>
+            {supervisors.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Reviewer"
+            value={reviewerFilter}
+            onChange={(e) => setReviewerFilter(e.target.value)}
+          >
+            <option value="">All reviewers</option>
+            {reviewers.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Mark status"
+            value={markStatusFilter}
+            onChange={(e) => setMarkStatusFilter(e.target.value)}
+          >
+            <option value="">All statuses</option>
+            <option value="both">Both marked</option>
+            <option value="supervisor_only">Supervisor only</option>
+            <option value="reviewer_only">Reviewer only</option>
+            <option value="supervisor_missing">Supervisor missing</option>
+            <option value="reviewer_missing">Reviewer missing</option>
+            <option value="neither">Neither marked</option>
+          </Select>
+          <div className="min-w-[200px] flex-1">
             <Input
-              className="pl-9"
-              placeholder="Search team / student / faculty"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+              label="Search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Team / student / faculty…"
             />
           </div>
+          <Button variant="secondary" onClick={clearFilters}>
+            Clear
+          </Button>
           <Button onClick={exportExcel} disabled={isLoading || filtered.length === 0}>
             Export Excel
           </Button>
         </div>
-      </div>
+      </Card>
 
       {isLoading ? (
         <TableSkeleton rows={12} />
@@ -201,7 +281,7 @@ export function CoordinatorMarks() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={13} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                      No students match.
+                      No students match these filters.
                     </td>
                   </tr>
                 ) : (

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Calendar, FileText, Plus, Trash2, Save } from 'lucide-react'
+import { Calendar, FileText, Trash2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { Card } from '@/components/ui/Card'

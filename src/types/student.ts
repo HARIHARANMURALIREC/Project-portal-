@@ -18,4 +18,4 @@ export interface StudentContext {
   selectionBlocked: boolean
 }
 
-export type StudentNavKey = 'dashboard' | 'topics' | 'project' | 'reviews' | 'profile'
+export type StudentNavKey = 'dashboard' | 'topics' | 'project' | 'reviews' | 'details' | 'profile'

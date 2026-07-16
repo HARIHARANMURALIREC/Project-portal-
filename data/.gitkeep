@@ -1,0 +1,10 @@
+Place your Excel source files here:
+
+- IV_A_-_Project_Batches.xlsx
+- IV_B_-_Project_Batches.xlsx
+- IV_C_-_Project_Batches.xlsx
+- IV_D_-_Project_Batches.xlsx
+- Fixed_Supervisors.xlsx
+- List_of_Proposed_Project_Titles.xlsx
+
+Then run: npm run import-data

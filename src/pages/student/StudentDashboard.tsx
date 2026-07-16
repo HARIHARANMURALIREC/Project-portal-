@@ -9,6 +9,7 @@ import {
   AlertCircle,
   GraduationCap,
   ClipboardCheck,
+  MessageSquare,
 } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { TeamMemberCard } from '@/components/student/TeamMemberCard'
@@ -19,6 +20,7 @@ import { getProjects } from '@/lib/studentApi'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { getStudentAcademicInfo, getTeamMembersForDisplay, truncateText } from '@/lib/mappers'
 import { canSelectProject, getProjectStatusLabel, getWelcomeMessage, isSelectionBlocked, isSupervisorAssignedProject } from '@/lib/studentRules'
+import { fetchCoordinatorRemarksForTeam, formatReviewDateTime } from '@/lib/reviews'
 import type { StudentContext } from '@/types/student'
 
 function teamDisplayName(batchCode: string) {
@@ -38,6 +40,13 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
     refetchOnWindowFocus: true,
   })
 
+  const { data: coordinatorRemarks = [] } = useQuery({
+    queryKey: ['coordinator-remarks', team.id],
+    queryFn: () => fetchCoordinatorRemarksForTeam(team.id),
+    refetchInterval: POLL_INTERVALS.portalStatus,
+    refetchOnWindowFocus: true,
+  })
+
   const canSelect = canSelectProject(team, selectionBlocked)
   const hasAssigned = !!selectedProject
   const blocked = isSelectionBlocked(team, selectionBlocked)
@@ -48,6 +57,26 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
         <h2 className="text-2xl font-bold">Welcome, {teamName}!</h2>
         <p className="mt-2 text-violet-100">{getWelcomeMessage(team, selectionBlocked)}</p>
       </div>
+
+      {coordinatorRemarks.length > 0 && (
+        <Card padding="lg" className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 ring-1 ring-amber-50 dark:ring-amber-900">
+          <div className="mb-4 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Coordinator Notes</h3>
+          </div>
+          <div className="space-y-3">
+            {coordinatorRemarks.map((remark) => (
+              <div key={remark.id} className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-app-surface p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{remark.review_title}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{formatReviewDateTime(remark.scheduled_at)}</p>
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{remark.remarks}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card padding="lg" className="border-violet-100 dark:border-violet-800 ring-1 ring-violet-50 dark:ring-violet-900">
         <div className="mb-6 flex items-center gap-2">

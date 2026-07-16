@@ -16,6 +16,7 @@ import { StudentDashboard } from '@/pages/student/StudentDashboard'
 import { AvailableTopics } from '@/pages/student/AvailableTopics'
 import { MyProject } from '@/pages/student/MyProject'
 import { StudentReviews } from '@/pages/student/StudentReviews'
+import { StudentDetails } from '@/pages/student/StudentDetails'
 import { StudentProfile } from '@/pages/student/StudentProfile'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -140,6 +141,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentReviews />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/details"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentDetails />
               </ProtectedRoute>
             }
           />

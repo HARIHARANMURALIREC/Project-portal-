@@ -15,9 +15,11 @@ import {
 } from '@/lib/coordinatorData'
 import { ZEROTH_REVIEW_TOTAL_MAX, marksKey, indexStudentMarks } from '@/lib/reviewMarks'
 import { sortTeamMembers } from '@/lib/teamSort'
+import { BATCH_COORDINATORS, BATCH_LABELS } from '@/lib/batchCoordinators'
 
 export function CoordinatorMarks() {
   const [q, setQ] = useState('')
+  const [selectedSection, setSelectedSection] = useState<string>('all')
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['coordinator-teams'],
@@ -33,6 +35,13 @@ export function CoordinatorMarks() {
   })
 
   const isLoading = teamsLoading || reviewsLoading || marksLoading
+
+  const filteredTeams = useMemo(
+    () => selectedSection === 'all' 
+      ? teams 
+      : teams.filter((t) => t.batch_id === selectedSection),
+    [teams, selectedSection],
+  )
 
   const reviewByTeam = useMemo(() => {
     const map = new Map<string, (typeof zerothReviews)[0]>()
@@ -59,7 +68,7 @@ export function CoordinatorMarks() {
       totalR: number | null
     }[] = []
 
-    for (const team of teams) {
+    for (const team of filteredTeams) {
       const review = reviewByTeam.get(team.id)
       const members = sortTeamMembers(team.team_members ?? [])
       for (const member of members) {
@@ -83,7 +92,7 @@ export function CoordinatorMarks() {
       }
     }
     return out
-  }, [teams, reviewByTeam, marksIndex])
+  }, [filteredTeams, reviewByTeam, marksIndex])
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase()
@@ -120,9 +129,10 @@ export function CoordinatorMarks() {
       'Rev SDG': r.sdgR ?? '',
       'Rev Total': r.totalR ?? '',
     }))
+    const sectionLabel = selectedSection === 'all' ? 'all-sections' : BATCH_LABELS[selectedSection].toLowerCase().replace(' ', '-')
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), 'Marks')
-    XLSX.writeFile(wb, `coordinator-marks-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    XLSX.writeFile(wb, `coordinator-marks-${sectionLabel}-${new Date().toISOString().slice(0, 10)}.xlsx`)
     toast.success('Marks report downloaded')
   }
 
@@ -136,6 +146,21 @@ export function CoordinatorMarks() {
       </p>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-400">Section:</label>
+            <select
+              value={selectedSection}
+              onChange={(e) => setSelectedSection(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-app-surface dark:text-slate-100"
+            >
+              <option value="all">All Sections</option>
+              {Object.entries(BATCH_COORDINATORS).map(([section, coordinator]) => (
+                <option key={section} value={section}>
+                  {BATCH_LABELS[section]} ({coordinator})
+                </option>
+              ))}
+            </select>
+          </div>
           <Card padding="sm" className="inline-flex items-center gap-2">
             <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.students}</span>
             <span className="text-xs text-slate-500">students</span>

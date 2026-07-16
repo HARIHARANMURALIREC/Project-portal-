@@ -170,3 +170,16 @@ export async function fetchScheduleTeamStatus(scheduleGroupId: string): Promise<
     return a.batch_code.localeCompare(b.batch_code, undefined, { numeric: true })
   })
 }
+
+export async function fetchCoordinatorRemarksForTeam(teamId: string): Promise<TeamReview[]> {
+  const { data, error } = await supabase
+    .from('team_reviews')
+    .select('*')
+    .eq('team_id', teamId)
+    .not('remarks', 'is', null)
+    .not('schedule_group_id', 'is', null)
+    .order('scheduled_at', { ascending: false })
+
+  if (error) throw error
+  return (data ?? []) as TeamReview[]
+}

@@ -3,25 +3,20 @@ import type { ReviewFileType, TeamReview, TeamReviewFile } from '@/types/databas
 
 export const REVIEW_SUBMISSIONS_BUCKET = 'review-submissions'
 
-const DATE_PATTERN = /(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})/
-
 function normalizeToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-/** Build suggested filename: 27A05_Review1_2026-07-15.pdf */
+/** Build suggested filename: 27A05_Review1.pdf */
 export function buildSuggestedReviewFilename(input: {
   batchCode: string
   reviewTitle: string
   date?: Date
   fileType: ReviewFileType
 }): string {
-  const date = input.date ?? new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
   const reviewToken = input.reviewTitle.replace(/\s+/g, '')
   const ext = input.fileType === 'pdf' ? 'pdf' : 'pptx'
-  return `${input.batchCode}_${reviewToken}_${dateStr}.${ext}`
+  return `${input.batchCode}_${reviewToken}.${ext}`
 }
 
 export function validateReviewFilename(input: {
@@ -38,7 +33,7 @@ export function validateReviewFilename(input: {
   if (!lower.includes(batch.toLowerCase())) {
     return {
       ok: false,
-      message: `Filename must include team ID (${batch}), e.g. ${batch}_Review1_2026-07-15.pdf`,
+      message: `Filename must include team ID (${batch}), e.g. ${batch}_Review1.pdf`,
     }
   }
 
@@ -48,13 +43,6 @@ export function validateReviewFilename(input: {
     return {
       ok: false,
       message: `Filename must include the review name (${input.reviewTitle.replace(/\s+/g, '')})`,
-    }
-  }
-
-  if (!DATE_PATTERN.test(name)) {
-    return {
-      ok: false,
-      message: 'Filename must include a date (YYYY-MM-DD or DD-MM-YYYY)',
     }
   }
 

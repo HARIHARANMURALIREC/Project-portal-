@@ -1,7 +1,7 @@
 import { CalendarCheck } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
-import { ReviewSubmissionPanel } from '@/components/reviews/ReviewSubmissionPanel'
+import { ReviewSubmissionPanel, ReviewUploadPlaceholder } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewRubricsInfo } from '@/components/reviews/ZerothReviewRubricsInfo'
 import { Card } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -23,9 +23,9 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Project Reviews</h3>
         </div>
         <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-          The coordinator sets a common review date and time for all teams. Upload one PDF and one PPT per review.
+          The coordinator sets a common review date and time for all teams. Upload one PDF per review.
           Filename must include team ID, review name, and date (example:{' '}
-          <span className="font-mono text-xs">{context.team.batch_code}_ZerothReview_2026-07-15.pdf</span>).
+          <span className="font-mono text-xs">{context.team.batch_code}_ZerothReview_.pdf</span>).
           For Zeroth Review you can see the rubrics below; your marks are not shown.
         </p>
         {(context.team.supervisor_name || context.team.reviewer_name) && (
@@ -47,7 +47,7 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
             <LoadingSpinner />
           </div>
         ) : sorted.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">No reviews scheduled yet.</p>
+          <ReviewUploadPlaceholder batchCode={context.team.batch_code} />
         ) : (
           <ul className="space-y-4">
             {sorted.map((review) => (

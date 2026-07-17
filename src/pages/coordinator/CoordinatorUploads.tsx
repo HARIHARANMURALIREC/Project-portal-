@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Download, Search } from 'lucide-react'
+import { Download } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Input, Select } from '@/components/ui/Input'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   fetchAllCoordinatorTeams,
@@ -15,7 +15,7 @@ import {
 } from '@/lib/coordinatorData'
 import { getReviewFileDownloadUrl } from '@/lib/reviewFiles'
 import { formatReviewDateTime } from '@/lib/reviews'
-import { sortTeamMembers } from '@/lib/teamSort'
+import { teamBatchOptions, teamMatchesFilters, uniqueSorted } from '@/lib/teamFilters'
 import type { TeamReviewFile } from '@/types/database'
 
 function DownloadLink({ file }: { file: TeamReviewFile }) {
@@ -46,7 +46,12 @@ function DownloadLink({ file }: { file: TeamReviewFile }) {
 }
 
 export function CoordinatorUploads() {
-  const [q, setQ] = useState('')
+  const [batchFilter, setBatchFilter] = useState('')
+  const [supervisorFilter, setSupervisorFilter] = useState('')
+  const [reviewerFilter, setReviewerFilter] = useState('')
+  const [reviewTitleFilter, setReviewTitleFilter] = useState('')
+  const [uploadFilter, setUploadFilter] = useState('')
+  const [search, setSearch] = useState('')
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['coordinator-teams'],
@@ -62,6 +67,11 @@ export function CoordinatorUploads() {
   })
 
   const isLoading = teamsLoading || reviewsLoading || filesLoading
+
+  const batches = useMemo(() => teamBatchOptions(teams), [teams])
+  const supervisors = useMemo(() => uniqueSorted(teams.map((t) => t.supervisor_name)), [teams])
+  const reviewers = useMemo(() => uniqueSorted(teams.map((t) => t.reviewer_name)), [teams])
+  const reviewTitles = useMemo(() => uniqueSorted(reviews.map((r) => r.review_title)), [reviews])
 
   const rows = useMemo(() => {
     const reviewsByTeam = new Map<string, typeof reviews>()
@@ -96,35 +106,67 @@ export function CoordinatorUploads() {
   }, [teams, reviews, files])
 
   const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase()
-    if (!term) return rows
-    return rows.filter(({ team }) => {
-      const members = sortTeamMembers(team.team_members ?? [])
-        .map((m) => `${m.name} ${m.reg_no}`)
-        .join(' ')
-        .toLowerCase()
-      return (
-        team.batch_code.toLowerCase().includes(term) ||
-        (team.supervisor_name ?? '').toLowerCase().includes(term) ||
-        (team.reviewer_name ?? '').toLowerCase().includes(term) ||
-        members.includes(term)
+    return rows
+      .filter(({ team }) =>
+        teamMatchesFilters(team, {
+          batchId: batchFilter,
+          supervisor: supervisorFilter,
+          reviewer: reviewerFilter,
+          search,
+        }),
       )
-    })
-  }, [rows, q])
+      .map(({ team, reviews: teamReviews }) => {
+        let nextReviews = teamReviews
+        if (reviewTitleFilter) {
+          nextReviews = nextReviews.filter((r) => r.review.review_title === reviewTitleFilter)
+        }
+        if (uploadFilter === 'pdf_missing') {
+          nextReviews = nextReviews.filter((r) => !r.pdf)
+        } else if (uploadFilter === 'ppt_missing') {
+          nextReviews = nextReviews.filter((r) => !r.ppt)
+        } else if (uploadFilter === 'both') {
+          nextReviews = nextReviews.filter((r) => r.pdf && r.ppt)
+        } else if (uploadFilter === 'incomplete') {
+          nextReviews = nextReviews.filter((r) => !r.pdf || !r.ppt)
+        } else if (uploadFilter === 'none_scheduled') {
+          nextReviews = teamReviews.length === 0 ? teamReviews : []
+        }
+
+        if (uploadFilter === 'none_scheduled') {
+          return teamReviews.length === 0 ? { team, reviews: [] as typeof teamReviews } : null
+        }
+
+        if (reviewTitleFilter || uploadFilter) {
+          if (nextReviews.length === 0) return null
+          return { team, reviews: nextReviews }
+        }
+        return { team, reviews: nextReviews }
+      })
+      .filter((row): row is NonNullable<typeof row> => row != null)
+  }, [rows, batchFilter, supervisorFilter, reviewerFilter, reviewTitleFilter, uploadFilter, search])
 
   const stats = useMemo(() => {
     let withPdf = 0
     let withPpt = 0
     let scheduled = 0
-    for (const row of rows) {
+    for (const row of filtered) {
       for (const r of row.reviews) {
         scheduled += 1
         if (r.pdf) withPdf += 1
         if (r.ppt) withPpt += 1
       }
     }
-    return { scheduled, withPdf, withPpt }
-  }, [rows])
+    return { scheduled, withPdf, withPpt, teams: filtered.length }
+  }, [filtered])
+
+  const clearFilters = () => {
+    setBatchFilter('')
+    setSupervisorFilter('')
+    setReviewerFilter('')
+    setReviewTitleFilter('')
+    setUploadFilter('')
+    setSearch('')
+  }
 
   const exportExcel = () => {
     const exportRows = filtered.flatMap(({ team, reviews: teamReviews }) => {
@@ -165,36 +207,95 @@ export function CoordinatorUploads() {
       <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
         PDF and PPT uploads for every team. Download files and export status to Excel.
       </p>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap gap-3">
-          <Card padding="sm" className="inline-flex items-center gap-2">
-            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.scheduled}</span>
-            <span className="text-xs text-slate-500">scheduled reviews</span>
-          </Card>
-          <Card padding="sm" className="inline-flex items-center gap-2 border-emerald-100 dark:border-emerald-800">
-            <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{stats.withPdf}</span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-300">PDF uploaded</span>
-          </Card>
-          <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
-            <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withPpt}</span>
-            <span className="text-xs text-sky-700 dark:text-sky-300">PPT uploaded</span>
-          </Card>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="relative min-w-[220px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <div className="mb-4 flex flex-wrap gap-3">
+        <Card padding="sm" className="inline-flex items-center gap-2">
+          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.teams}</span>
+          <span className="text-xs text-slate-500">teams shown</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2">
+          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.scheduled}</span>
+          <span className="text-xs text-slate-500">scheduled reviews</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-emerald-100 dark:border-emerald-800">
+          <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{stats.withPdf}</span>
+          <span className="text-xs text-emerald-700 dark:text-emerald-300">PDF uploaded</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
+          <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withPpt}</span>
+          <span className="text-xs text-sky-700 dark:text-sky-300">PPT uploaded</span>
+        </Card>
+      </div>
+
+      <Card className="mb-4" padding="md">
+        <div className="flex flex-wrap items-end gap-3">
+          <Select label="Batch" value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)}>
+            <option value="">All batches</option>
+            {batches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Supervisor"
+            value={supervisorFilter}
+            onChange={(e) => setSupervisorFilter(e.target.value)}
+          >
+            <option value="">All supervisors</option>
+            {supervisors.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Reviewer"
+            value={reviewerFilter}
+            onChange={(e) => setReviewerFilter(e.target.value)}
+          >
+            <option value="">All reviewers</option>
+            {reviewers.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Review"
+            value={reviewTitleFilter}
+            onChange={(e) => setReviewTitleFilter(e.target.value)}
+          >
+            <option value="">All reviews</option>
+            {reviewTitles.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </Select>
+          <Select label="Upload status" value={uploadFilter} onChange={(e) => setUploadFilter(e.target.value)}>
+            <option value="">All statuses</option>
+            <option value="both">PDF + PPT uploaded</option>
+            <option value="incomplete">Missing PDF or PPT</option>
+            <option value="pdf_missing">PDF missing</option>
+            <option value="ppt_missing">PPT missing</option>
+            <option value="none_scheduled">No review scheduled</option>
+          </Select>
+          <div className="min-w-[200px] flex-1">
             <Input
-              className="pl-9"
-              placeholder="Search team / supervisor / student"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+              label="Search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Team / supervisor / student…"
             />
           </div>
+          <Button variant="secondary" onClick={clearFilters}>
+            Clear
+          </Button>
           <Button onClick={exportExcel} disabled={isLoading || filtered.length === 0}>
             Export Excel
           </Button>
         </div>
-      </div>
+      </Card>
 
       {isLoading ? (
         <TableSkeleton rows={10} />
@@ -216,7 +317,7 @@ export function CoordinatorUploads() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                      No teams match.
+                      No teams match these filters.
                     </td>
                   </tr>
                 ) : (

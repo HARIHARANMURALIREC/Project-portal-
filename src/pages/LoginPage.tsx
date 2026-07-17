@@ -128,14 +128,12 @@ export function LoginPage() {
     }
 
     const { email, password } = studentAuthCredentials(data.password)
-    console.log('Student login attempt:', { email, teamId: data.teamId })
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
-      console.error('Login error:', error)
       const isInvalidKey =
         error.status === 401 ||
         error.message.toLowerCase().includes('invalid api key')
@@ -143,7 +141,7 @@ export function LoginPage() {
         ? ' Supabase API key is wrong on this deployment. In Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon public key only), then redeploy.'
         : error.message === 'Invalid login credentials'
           ? ' Use your Registration No. as the password (same value as Reg.No.).'
-          : ` (Status: ${error.status})`
+          : ''
       toast.error(error.message + hint)
       return
     }

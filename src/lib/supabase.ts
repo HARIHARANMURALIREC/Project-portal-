@@ -9,11 +9,8 @@ function extractSupabaseUrl(value: string | undefined): string | undefined {
 
 function extractAnonKey(value: string | undefined): string | undefined {
   if (!value) return undefined
-  const trimmed = value.trim().split(/\s+/)[0]
-  const jwtMatch = trimmed.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)
-  if (jwtMatch?.[0]) return jwtMatch[0]
-  if (/^sb_publishable_[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed
-  return undefined
+  const match = value.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)
+  return match?.[0]
 }
 
 const supabaseUrl = extractSupabaseUrl(import.meta.env.VITE_SUPABASE_URL)
@@ -41,12 +38,6 @@ export const supabaseConfigError = isSupabaseConfigured
 
 if (!isSupabaseConfigured) {
   console.error(supabaseConfigError)
-} else {
-  console.log('Supabase configured:', {
-    url: configuredUrl,
-    hasKey: !!configuredKey,
-    keyLength: configuredKey?.length
-  })
 }
 
 export const supabase = createClient(

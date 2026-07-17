@@ -13,7 +13,7 @@ export function ReviewStatusBadge({ review }: { review: TeamReview }) {
       }`}
     >
       {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-      {done ? 'Completed' : 'Scheduled'}
+      {done ? 'Completed' : 'Pending'}
     </span>
   )
 }
@@ -39,7 +39,7 @@ export function ReviewList({ reviews, emptyMessage = 'No reviews scheduled yet.'
             <div>
               <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                {isReviewCompleted(review) ? 'Completed' : 'Scheduled'}:{' '}
+                {isReviewCompleted(review) ? 'Completed' : 'Pending'}:{' '}
                 {formatReviewDateTime(isReviewCompleted(review) ? review.completed_at! : review.scheduled_at)}
               </p>
               {!isReviewCompleted(review) && (

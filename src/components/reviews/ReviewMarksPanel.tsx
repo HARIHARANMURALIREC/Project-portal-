@@ -306,11 +306,11 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                   <th className="px-2 py-1 text-center">Abs</th>
                   <th className="px-2 py-1 text-center">SDG</th>
                   <th className="px-2 py-1 text-center">Tot</th>
-                  <th className="px-2 py-1 text-center" />
                   <th className="px-2 py-1 text-center">Nov</th>
                   <th className="px-2 py-1 text-center">Abs</th>
                   <th className="px-2 py-1 text-center">SDG</th>
                   <th className="px-2 py-1 text-center">Tot</th>
+                  <th className="px-2 py-1 text-center">Avg</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

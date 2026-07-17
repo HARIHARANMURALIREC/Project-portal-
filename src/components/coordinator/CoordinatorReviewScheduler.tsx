@@ -148,6 +148,8 @@ function SupervisorBreakdown({
                         completed_at: team.completed_at,
                         completed_by: null,
                         remarks: null,
+                        reviewer_remarks: null,
+                        reviewer_remarks_date: null,
                         created_by: '',
                         created_at: '',
                         updated_at: '',

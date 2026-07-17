@@ -5,8 +5,7 @@ import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { withSortedTeams } from '@/lib/teamSort'
-import { useAuth } from '@/hooks/useAuth'
-import { Layout } from '@/components/Layout'
+import { AdminPageShell } from '@/components/admin/AdminPageShell'
 import { StatusBadge } from '@/components/StatusBadge'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card, StatCard } from '@/components/ui/Card'
@@ -17,7 +16,6 @@ import { sortTeamMembers } from '@/lib/teamSort'
 import { fetchSupervisorLoginStatus } from '@/lib/adminSupervisors'
 
 export function AdminDashboard() {
-  const { profile, signOut } = useAuth()
   const queryClient = useQueryClient()
   const [batchFilter, setBatchFilter] = useState('')
   const [supervisorFilter, setSupervisorFilter] = useState('')
@@ -264,13 +262,11 @@ export function AdminDashboard() {
   }
 
   return (
-    <Layout
-      title="Admin Dashboard"
-      subtitle="Monitor team allotments and project selections"
-      userName={profile?.full_name ?? undefined}
-      role="admin"
-      onSignOut={signOut}
-    >
+    <AdminPageShell title="Admin Dashboard" activeNav="overview">
+      <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">
+        Monitor team allotments and project selections. Use Uploads and Marks in the sidebar for review
+        submissions and scores.
+      </p>
       {/* Stats */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Teams" value={stats.total} accent="primary" />
@@ -672,7 +668,7 @@ export function AdminDashboard() {
           </Card>
         </div>
       )}
-    </Layout>
+    </AdminPageShell>
   )
 }
 

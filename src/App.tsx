@@ -4,6 +4,8 @@ import { Toaster } from 'sonner'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { LoginPage } from '@/pages/LoginPage'
 import { AdminDashboard } from '@/pages/AdminDashboard'
+import { AdminUploads } from '@/pages/admin/AdminUploads'
+import { AdminMarks } from '@/pages/admin/AdminMarks'
 import { CoordinatorDashboard } from '@/pages/CoordinatorDashboard'
 import { CoordinatorUploads } from '@/pages/coordinator/CoordinatorUploads'
 import { CoordinatorMarks } from '@/pages/coordinator/CoordinatorMarks'
@@ -45,6 +47,22 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/uploads"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminUploads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/marks"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminMarks />
               </ProtectedRoute>
             }
           />

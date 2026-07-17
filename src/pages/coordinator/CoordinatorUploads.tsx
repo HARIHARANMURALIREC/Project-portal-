@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Download } from 'lucide-react'
+import { Download, FileArchive } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
 import { Card } from '@/components/ui/Card'
@@ -13,7 +13,12 @@ import {
   fetchAllReviewFiles,
   fetchAllTeamReviews,
 } from '@/lib/coordinatorData'
-import { getReviewFileDownloadUrl } from '@/lib/reviewFiles'
+import {
+  buildReviewFilesZip,
+  getReviewFileDownloadUrl,
+  triggerBlobDownload,
+  type ZipReviewFileEntry,
+} from '@/lib/reviewFiles'
 import { formatReviewDateTime } from '@/lib/reviews'
 import { teamBatchOptions, teamMatchesFilters, uniqueSorted } from '@/lib/teamFilters'
 import type { TeamReviewFile } from '@/types/database'
@@ -52,6 +57,8 @@ export function CoordinatorUploads() {
   const [reviewTitleFilter, setReviewTitleFilter] = useState('')
   const [uploadFilter, setUploadFilter] = useState('')
   const [search, setSearch] = useState('')
+  const [zipBusy, setZipBusy] = useState(false)
+  const [zipProgress, setZipProgress] = useState<string | null>(null)
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['coordinator-teams'],
@@ -168,6 +175,31 @@ export function CoordinatorUploads() {
     setSearch('')
   }
 
+  const zipEntries = useMemo((): ZipReviewFileEntry[] => {
+    const entries: ZipReviewFileEntry[] = []
+    for (const { team, reviews: teamReviews } of filtered) {
+      for (const { review, pdf, ppt } of teamReviews) {
+        if (pdf) {
+          entries.push({
+            storage_path: pdf.storage_path,
+            original_filename: pdf.original_filename,
+            batchCode: team.batch_code,
+            reviewTitle: review.review_title,
+          })
+        }
+        if (ppt) {
+          entries.push({
+            storage_path: ppt.storage_path,
+            original_filename: ppt.original_filename,
+            batchCode: team.batch_code,
+            reviewTitle: review.review_title,
+          })
+        }
+      }
+    }
+    return entries
+  }, [filtered])
+
   const exportExcel = () => {
     const exportRows = filtered.flatMap(({ team, reviews: teamReviews }) => {
       if (teamReviews.length === 0) {
@@ -202,10 +234,36 @@ export function CoordinatorUploads() {
     toast.success('Upload report downloaded')
   }
 
+  const downloadZip = () => {
+    if (zipEntries.length === 0) {
+      toast.error('No uploaded files match the current filters')
+      return
+    }
+
+    void (async () => {
+      setZipBusy(true)
+      setZipProgress(`0 / ${zipEntries.length}`)
+      try {
+        const blob = await buildReviewFilesZip(zipEntries, (done, total) => {
+          setZipProgress(`${done} / ${total}`)
+        })
+        const stamp = new Date().toISOString().slice(0, 10)
+        triggerBlobDownload(blob, `review-uploads-${stamp}.zip`)
+        toast.success(`Downloaded ZIP with ${zipEntries.length} file${zipEntries.length === 1 ? '' : 's'}`)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'ZIP download failed')
+      } finally {
+        setZipBusy(false)
+        setZipProgress(null)
+      }
+    })()
+  }
+
   return (
     <CoordinatorPageShell title="Review Uploads" activeNav="uploads">
       <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-        PDF and PPT uploads for every team. Download files and export status to Excel.
+        PDF and PPT uploads for every team. Download individual files, pack filtered uploads as a ZIP, or
+        export status to Excel.
       </p>
       <div className="mb-4 flex flex-wrap gap-3">
         <Card padding="sm" className="inline-flex items-center gap-2">
@@ -290,6 +348,15 @@ export function CoordinatorUploads() {
           </div>
           <Button variant="secondary" onClick={clearFilters}>
             Clear
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={downloadZip}
+            disabled={isLoading || zipBusy || zipEntries.length === 0}
+            className="gap-1.5"
+          >
+            <FileArchive className="h-4 w-4" />
+            {zipBusy ? `Zipping ${zipProgress ?? ''}…` : `Download ZIP (${zipEntries.length})`}
           </Button>
           <Button onClick={exportExcel} disabled={isLoading || filtered.length === 0}>
             Export Excel

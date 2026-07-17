@@ -159,3 +159,98 @@ export async function getReviewFileDownloadUrl(storagePath: string): Promise<str
   }
   return data.signedUrl
 }
+
+export async function downloadReviewFileBlob(storagePath: string): Promise<Blob> {
+  const { data, error } = await supabase.storage
+    .from(REVIEW_SUBMISSIONS_BUCKET)
+    .download(storagePath)
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to download file')
+  }
+  return data
+}
+
+export type ZipReviewFileEntry = {
+  storage_path: string
+  original_filename: string
+  batchCode: string
+  reviewTitle: string
+}
+
+function sanitizeZipSegment(value: string): string {
+  return value.replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim() || 'untitled'
+}
+
+function uniqueZipPath(used: Set<string>, folder: string, filename: string): string {
+  const safeFolder = folder.split('/').map(sanitizeZipSegment).join('/')
+  const safeName = sanitizeZipSegment(filename)
+  let path = `${safeFolder}/${safeName}`
+  if (!used.has(path.toLowerCase())) {
+    used.add(path.toLowerCase())
+    return path
+  }
+
+  const dot = safeName.lastIndexOf('.')
+  const base = dot > 0 ? safeName.slice(0, dot) : safeName
+  const ext = dot > 0 ? safeName.slice(dot) : ''
+  let n = 2
+  while (used.has(path.toLowerCase())) {
+    path = `${safeFolder}/${base}_${n}${ext}`
+    n += 1
+  }
+  used.add(path.toLowerCase())
+  return path
+}
+
+/** Pack review files into a ZIP (folder layout: TeamID / ReviewTitle / filename). */
+export async function buildReviewFilesZip(
+  entries: ZipReviewFileEntry[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<Blob> {
+  if (entries.length === 0) {
+    throw new Error('No uploaded files to download')
+  }
+
+  const JSZip = (await import('jszip')).default
+  const zip = new JSZip()
+  const used = new Set<string>()
+  const failures: string[] = []
+
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i]
+    try {
+      const blob = await downloadReviewFileBlob(entry.storage_path)
+      const path = uniqueZipPath(
+        used,
+        `${entry.batchCode}/${entry.reviewTitle}`,
+        entry.original_filename,
+      )
+      zip.file(path, blob)
+    } catch {
+      failures.push(`${entry.batchCode}/${entry.reviewTitle}/${entry.original_filename}`)
+    }
+    onProgress?.(i + 1, entries.length)
+  }
+
+  if (used.size === 0) {
+    throw new Error(
+      failures.length > 0
+        ? `Could not download any files (${failures.length} failed)`
+        : 'No uploaded files to download',
+    )
+  }
+
+  return zip.generateAsync({ type: 'blob' })
+}
+
+export function triggerBlobDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}

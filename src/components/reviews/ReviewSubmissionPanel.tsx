@@ -48,6 +48,14 @@ function FileUploadZone({
 
   const handleFile = (file: File) => {
     if (!enabled || uploading) return
+    
+    // Check file size (1MB limit)
+    const maxSize = 1 * 1024 * 1024 // 1MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 1MB')
+      return
+    }
+    
     onUpload(file, fileType)
   }
 

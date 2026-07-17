@@ -19,6 +19,13 @@ create index if not exists student_daily_interactions_date_idx on student_daily_
 
 alter table student_daily_interactions enable row level security;
 
+-- Drop existing policies if they exist
+drop policy if exists "Students can read own interactions" on student_daily_interactions;
+drop policy if exists "Students can insert own interactions" on student_daily_interactions;
+drop policy if exists "Students can update own interactions" on student_daily_interactions;
+drop policy if exists "Coordinators can read section interactions" on student_daily_interactions;
+drop policy if exists "Admins can read all interactions" on student_daily_interactions;
+
 -- Students can read/write their own interactions
 create policy "Students can read own interactions"
   on student_daily_interactions for select

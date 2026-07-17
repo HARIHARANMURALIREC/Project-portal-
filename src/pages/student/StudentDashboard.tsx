@@ -10,6 +10,7 @@ import {
   GraduationCap,
   ClipboardCheck,
   MessageSquare,
+  FileText,
 } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
 import { TeamMemberCard } from '@/components/student/TeamMemberCard'
@@ -21,6 +22,7 @@ import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { getStudentAcademicInfo, getTeamMembersForDisplay, truncateText } from '@/lib/mappers'
 import { canSelectProject, getProjectStatusLabel, getWelcomeMessage, isSelectionBlocked, isSupervisorAssignedProject } from '@/lib/studentRules'
 import { fetchCoordinatorRemarksForTeam, formatReviewDateTime } from '@/lib/reviews'
+import { fetchSupervisorInstructionsForTeam, formatSupervisorInstructionDateTime } from '@/lib/supervisorNotes'
 import type { StudentContext } from '@/types/student'
 
 function teamDisplayName(batchCode: string) {
@@ -43,6 +45,13 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
   const { data: coordinatorRemarks = [] } = useQuery({
     queryKey: ['coordinator-remarks', team.id],
     queryFn: () => fetchCoordinatorRemarksForTeam(team.id),
+    refetchInterval: POLL_INTERVALS.portalStatus,
+    refetchOnWindowFocus: true,
+  })
+
+  const { data: supervisorInstructions = [] } = useQuery({
+    queryKey: ['supervisor-instructions', team.id],
+    queryFn: () => fetchSupervisorInstructionsForTeam(team.id),
     refetchInterval: POLL_INTERVALS.portalStatus,
     refetchOnWindowFocus: true,
   })
@@ -72,6 +81,26 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
                   <p className="text-xs text-slate-500 dark:text-slate-400">{formatReviewDateTime(remark.scheduled_at)}</p>
                 </div>
                 <p className="text-sm text-slate-700 dark:text-slate-300">{remark.remarks}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {supervisorInstructions.length > 0 && (
+        <Card padding="lg" className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 ring-1 ring-violet-50 dark:ring-violet-900">
+          <div className="mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Supervisor Instructions</h3>
+          </div>
+          <div className="space-y-3">
+            {supervisorInstructions.map((note) => (
+              <div key={note.id} className="rounded-lg border border-violet-200 dark:border-violet-800 bg-white dark:bg-app-surface p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{note.instruction_title}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{formatSupervisorInstructionDateTime(note.scheduled_at)}</p>
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{note.notes}</p>
               </div>
             ))}
           </div>

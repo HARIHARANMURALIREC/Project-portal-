@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, FileText } from 'lucide-react'
 import { TeacherPageShell } from '@/components/teacher/TeacherPageShell'
 import {
   AllocationTable,
@@ -15,9 +15,25 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useTeacherTeams } from '@/hooks/useTeacherTeams'
 import { fetchCoordinatorRemarksForTeam, formatReviewDateTime } from '@/lib/reviews'
+import { fetchSupervisorInstructionsForTeam, formatSupervisorInstructionDateTime, deleteSupervisorInstruction } from '@/lib/supervisorNotes'
+import { SupervisorInstructionScheduler } from '@/components/teacher/SupervisorInstructionScheduler'
+import { Trash2 } from 'lucide-react'
 
 function TeacherDashboardContent() {
   const { data: teams = [], isLoading } = useTeacherTeams()
+  const queryClient = useQueryClient()
+
+  const handleDeleteInstruction = async (instructionId: string) => {
+    if (confirm('Are you sure you want to delete this instruction?')) {
+      try {
+        await deleteSupervisorInstruction(instructionId)
+        toast.success('Instruction deleted successfully')
+        void queryClient.invalidateQueries({ queryKey: ['supervisor-instructions'] })
+      } catch (error) {
+        toast.error('Failed to delete instruction')
+      }
+    }
+  }
 
   const allocatedTeams = useMemo(
     () => teams.filter((t) => t.selected_project_id && t.projects),
@@ -36,6 +52,19 @@ function TeacherDashboardContent() {
       if (teamIds.length === 0) return []
       const remarksPromises = teamIds.map(teamId => fetchCoordinatorRemarksForTeam(teamId))
       const results = await Promise.all(remarksPromises)
+      return results.flat()
+    },
+    enabled: teamIds.length > 0,
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
+  })
+
+  const { data: allSupervisorInstructions = [] } = useQuery({
+    queryKey: ['supervisor-instructions', teamIds],
+    queryFn: async () => {
+      if (teamIds.length === 0) return []
+      const instructionsPromises = teamIds.map(teamId => fetchSupervisorInstructionsForTeam(teamId))
+      const results = await Promise.all(instructionsPromises)
       return results.flat()
     },
     enabled: teamIds.length > 0,
@@ -86,6 +115,40 @@ function TeacherDashboardContent() {
           </div>
         </Card>
       )}
+
+      {allSupervisorInstructions.length > 0 && (
+        <Card padding="lg" className="mb-6 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 ring-1 ring-violet-50 dark:ring-violet-900">
+          <div className="mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your Supervisor Instructions</h3>
+          </div>
+          <div className="space-y-3">
+            {allSupervisorInstructions.map((note) => (
+              <div key={note.id} className="rounded-lg border border-violet-200 dark:border-violet-800 bg-white dark:bg-app-surface p-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{note.instruction_title}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatSupervisorInstructionDateTime(note.scheduled_at)}</p>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteInstruction(note.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{note.notes}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <section className="mb-8">
+        <SupervisorInstructionScheduler />
+      </section>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">

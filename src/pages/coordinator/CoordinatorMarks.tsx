@@ -125,7 +125,22 @@ export function CoordinatorMarks() {
   const stats = useMemo(() => {
     const withSup = filtered.filter((r) => r.totalS != null).length
     const withRev = filtered.filter((r) => r.totalR != null).length
-    return { students: filtered.length, withSup, withRev }
+    const supTotal = filtered.reduce((sum, r) => sum + (r.totalS ?? 0), 0)
+    const revTotal = filtered.reduce((sum, r) => sum + (r.totalR ?? 0), 0)
+    const supAvg = withSup > 0 ? supTotal / withSup : 0
+    const revAvg = withRev > 0 ? revTotal / withRev : 0
+    const overallAvg = withSup > 0 && withRev > 0 ? (supAvg + revAvg) / 2 : 0
+
+    return {
+      students: filtered.length,
+      withSup,
+      withRev,
+      supTotal,
+      revTotal,
+      supAvg: supAvg.toFixed(2),
+      revAvg: revAvg.toFixed(2),
+      overallAvg: overallAvg.toFixed(2),
+    }
   }, [filtered])
 
   const clearFilters = () => {
@@ -178,6 +193,26 @@ export function CoordinatorMarks() {
         <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
           <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withRev}</span>
           <span className="text-xs text-sky-700 dark:text-sky-300">reviewer marked</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-emerald-100 dark:border-emerald-800">
+          <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{stats.supTotal}</span>
+          <span className="text-xs text-emerald-700 dark:text-emerald-300">supervisor total</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-amber-100 dark:border-amber-800">
+          <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{stats.revTotal}</span>
+          <span className="text-xs text-amber-700 dark:text-amber-300">reviewer total</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-rose-100 dark:border-rose-800">
+          <span className="text-lg font-bold text-rose-700 dark:text-rose-300">{stats.supAvg}</span>
+          <span className="text-xs text-rose-700 dark:text-rose-300">supervisor avg</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-indigo-100 dark:border-indigo-800">
+          <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{stats.revAvg}</span>
+          <span className="text-xs text-indigo-700 dark:text-indigo-300">reviewer avg</span>
+        </Card>
+        <Card padding="sm" className="inline-flex items-center gap-2 border-purple-100 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/50">
+          <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{stats.overallAvg}</span>
+          <span className="text-xs text-purple-700 dark:text-purple-300">overall avg</span>
         </Card>
       </div>
 
@@ -264,6 +299,7 @@ export function CoordinatorMarks() {
                   <th className="px-3 py-3 text-center" colSpan={4}>
                     Reviewer marks
                   </th>
+                  <th className="px-3 py-3 text-center">Average</th>
                 </tr>
                 <tr className="text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   <th className="px-3 py-1" colSpan={5} />
@@ -271,6 +307,7 @@ export function CoordinatorMarks() {
                   <th className="px-2 py-1 text-center">Abs</th>
                   <th className="px-2 py-1 text-center">SDG</th>
                   <th className="px-2 py-1 text-center">Tot</th>
+                  <th className="px-2 py-1 text-center" />
                   <th className="px-2 py-1 text-center">Nov</th>
                   <th className="px-2 py-1 text-center">Abs</th>
                   <th className="px-2 py-1 text-center">SDG</th>
@@ -280,7 +317,7 @@ export function CoordinatorMarks() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan={14} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                       No students match these filters.
                     </td>
                   </tr>
@@ -302,6 +339,13 @@ export function CoordinatorMarks() {
                       <td className="px-2 py-2 text-center">{cell(r.abstractR)}</td>
                       <td className="px-2 py-2 text-center">{cell(r.sdgR)}</td>
                       <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">{cell(r.totalR)}</td>
+                      <td className="px-2 py-2 text-center font-bold text-purple-700 dark:text-purple-300">
+                        {r.totalS != null && r.totalR != null ? (
+                          ((r.totalS + r.totalR) / 2).toFixed(2)
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

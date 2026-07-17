@@ -71,6 +71,17 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
                         <span className="font-medium">Notes:</span> {review.remarks}
                       </p>
                     )}
+                    {review.reviewer_remarks && (
+                      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-800 dark:bg-sky-950/40">
+                        <p className="text-sm font-semibold text-sky-900 dark:text-sky-200">Reviewer Remarks</p>
+                        <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{review.reviewer_remarks}</p>
+                        {review.reviewer_remarks_date && (
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Date: {formatReviewDateTime(review.reviewer_remarks_date)}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <ReviewStatusBadge review={review} />
                 </div>

@@ -338,15 +338,19 @@ export function CoordinatorUploads() {
                     }
                     return teamReviews.map(({ review, pdf, ppt }, idx) => (
                       <tr key={`${team.id}-${review.id}`} className="bg-white dark:bg-app-surface">
-                        <td className="px-4 py-3 font-mono font-semibold text-violet-700 dark:text-violet-300">
-                          {idx === 0 ? team.batch_code : ''}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                          {idx === 0 ? (team.supervisor_name ?? '—') : ''}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                          {idx === 0 ? (team.reviewer_name ?? '—') : ''}
-                        </td>
+                        {idx === 0 && (
+                          <>
+                            <td className="px-4 py-3 font-mono font-semibold text-violet-700 dark:text-violet-300" rowSpan={teamReviews.length}>
+                              {team.batch_code}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300" rowSpan={teamReviews.length}>
+                              {team.supervisor_name ?? '—'}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300" rowSpan={teamReviews.length}>
+                              {team.reviewer_name ?? '—'}
+                            </td>
+                          </>
+                        )}
                         <td className="px-4 py-3">
                           <p className="font-medium text-slate-900 dark:text-slate-100">{review.review_title}</p>
                           <p className="text-xs text-slate-500">{formatReviewDateTime(review.scheduled_at)}</p>

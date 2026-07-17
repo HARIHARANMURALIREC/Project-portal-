@@ -81,6 +81,8 @@ export interface TeamReview {
   completed_at: string | null
   completed_by: string | null
   remarks: string | null
+  reviewer_remarks: string | null
+  reviewer_remarks_date: string | null
   created_by: string
   created_at: string
   updated_at: string

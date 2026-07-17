@@ -110,7 +110,24 @@ export function CoordinatorMarks() {
   const stats = useMemo(() => {
     const withSup = rows.filter((r) => r.totalS != null).length
     const withRev = rows.filter((r) => r.totalR != null).length
-    return { students: rows.length, withSup, withRev }
+    
+    const supTotal = rows.reduce((sum, r) => sum + (r.totalS ?? 0), 0)
+    const revTotal = rows.reduce((sum, r) => sum + (r.totalR ?? 0), 0)
+    
+    const supAvg = withSup > 0 ? supTotal / withSup : 0
+    const revAvg = withRev > 0 ? revTotal / withRev : 0
+    const overallAvg = (supAvg + revAvg) / 2
+    
+    return { 
+      students: rows.length, 
+      withSup, 
+      withRev,
+      supTotal,
+      revTotal,
+      supAvg: supAvg.toFixed(2),
+      revAvg: revAvg.toFixed(2),
+      overallAvg: overallAvg.toFixed(2)
+    }
   }, [rows])
 
   const exportExcel = () => {
@@ -173,6 +190,26 @@ export function CoordinatorMarks() {
             <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withRev}</span>
             <span className="text-xs text-sky-700 dark:text-sky-300">reviewer marked</span>
           </Card>
+          <Card padding="sm" className="inline-flex items-center gap-2 border-emerald-100 dark:border-emerald-800">
+            <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{stats.supTotal}</span>
+            <span className="text-xs text-emerald-700 dark:text-emerald-300">supervisor total</span>
+          </Card>
+          <Card padding="sm" className="inline-flex items-center gap-2 border-amber-100 dark:border-amber-800">
+            <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{stats.revTotal}</span>
+            <span className="text-xs text-amber-700 dark:text-amber-300">reviewer total</span>
+          </Card>
+          <Card padding="sm" className="inline-flex items-center gap-2 border-rose-100 dark:border-rose-800">
+            <span className="text-lg font-bold text-rose-700 dark:text-rose-300">{stats.supAvg}</span>
+            <span className="text-xs text-rose-700 dark:text-rose-300">supervisor avg</span>
+          </Card>
+          <Card padding="sm" className="inline-flex items-center gap-2 border-indigo-100 dark:border-indigo-800">
+            <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{stats.revAvg}</span>
+            <span className="text-xs text-indigo-700 dark:text-indigo-300">reviewer avg</span>
+          </Card>
+          <Card padding="sm" className="inline-flex items-center gap-2 border-purple-100 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50">
+            <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{stats.overallAvg}</span>
+            <span className="text-xs text-purple-700 dark:text-purple-300">overall avg</span>
+          </Card>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <div className="relative min-w-[220px]">
@@ -209,6 +246,7 @@ export function CoordinatorMarks() {
                   <th className="px-3 py-3 text-center" colSpan={4}>
                     Reviewer marks
                   </th>
+                  <th className="px-3 py-3 text-center">Average</th>
                 </tr>
                 <tr className="text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   <th className="px-3 py-1" colSpan={5} />
@@ -220,35 +258,44 @@ export function CoordinatorMarks() {
                   <th className="px-2 py-1 text-center">Abs</th>
                   <th className="px-2 py-1 text-center">SDG</th>
                   <th className="px-2 py-1 text-center">Tot</th>
+                  <th className="px-2 py-1 text-center" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan={14} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                       No students match.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((r) => (
-                    <tr key={`${r.teamCode}-${r.regNo}`} className="bg-white dark:bg-app-surface">
-                      <td className="px-3 py-2 font-mono text-xs font-semibold text-violet-700 dark:text-violet-300">
-                        {r.teamCode}
-                      </td>
-                      <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{r.studentName}</td>
-                      <td className="px-3 py-2 font-mono text-xs text-slate-600 dark:text-slate-300">{r.regNo}</td>
-                      <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{r.supervisor}</td>
-                      <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{r.reviewer}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.noveltyS)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.abstractS)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.sdgS)}</td>
-                      <td className="px-2 py-2 text-center text-violet-700 dark:text-violet-300">{cell(r.totalS)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.noveltyR)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.abstractR)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.sdgR)}</td>
-                      <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">{cell(r.totalR)}</td>
-                    </tr>
-                  ))
+                  filtered.map((r) => {
+                    const avg = r.totalS != null && r.totalR != null 
+                      ? ((r.totalS + r.totalR) / 2).toFixed(2)
+                      : null
+                    return (
+                      <tr key={`${r.teamCode}-${r.regNo}`} className="bg-white dark:bg-app-surface">
+                        <td className="px-3 py-2 font-mono text-xs font-semibold text-violet-700 dark:text-violet-300">
+                          {r.teamCode}
+                        </td>
+                        <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{r.studentName}</td>
+                        <td className="px-3 py-2 font-mono text-xs text-slate-600 dark:text-slate-300">{r.regNo}</td>
+                        <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{r.supervisor}</td>
+                        <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{r.reviewer}</td>
+                        <td className="px-2 py-2 text-center">{cell(r.noveltyS)}</td>
+                        <td className="px-2 py-2 text-center">{cell(r.abstractS)}</td>
+                        <td className="px-2 py-2 text-center">{cell(r.sdgS)}</td>
+                        <td className="px-2 py-2 text-center text-violet-700 dark:text-violet-300">{cell(r.totalS)}</td>
+                        <td className="px-2 py-2 text-center">{cell(r.noveltyR)}</td>
+                        <td className="px-2 py-2 text-center">{cell(r.abstractR)}</td>
+                        <td className="px-2 py-2 text-center">{cell(r.sdgR)}</td>
+                        <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">{cell(r.totalR)}</td>
+                        <td className="px-2 py-2 text-center font-bold text-purple-700 dark:text-purple-300">
+                          {avg != null ? avg : <span className="text-slate-400">—</span>}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

@@ -1,21 +1,32 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { ChevronDown, ChevronUp, Save, Pencil } from 'lucide-react'
 import { TeacherPageShell } from '@/components/teacher/TeacherPageShell'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { useReviewerTeams } from '@/hooks/useReviewerTeams'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
+import { useAuth } from '@/hooks/useAuth'
 import { sortTeamMembers } from '@/lib/teamSort'
-import { formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
+import { formatReviewDateTime, isReviewCompleted, toDatetimeLocalValue } from '@/lib/reviews'
 import { isZerothReview } from '@/lib/reviewMarks'
+import { supabase } from '@/lib/supabase'
 import type { TeamWithDetails } from '@/types/database'
 
 function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
   const { data: reviews = [], isLoading: reviewsLoading } = useTeamReviews(team.id)
   const [expanded, setExpanded] = useState(false)
+  const [editingRemarks, setEditingRemarks] = useState<string | null>(null)
+  const [remarksText, setRemarksText] = useState('')
+  const [remarksDate, setRemarksDate] = useState('')
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   const sortedReviews = reviews.slice().sort(
     (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
@@ -25,6 +36,37 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
     ? sortTeamMembers(team.team_members).map((m) => m.name).join(', ')
     : '—'
   const zerothPending = sortedReviews.filter((r) => isZerothReview(r.review_title)).length
+
+  const updateRemarksMutation = useMutation({
+    mutationFn: async (reviewId: string) => {
+      if (!user?.id) throw new Error('Not signed in')
+      const { error } = await supabase
+        .from('team_reviews')
+        .update({
+          reviewer_remarks: remarksText.trim() || null,
+          reviewer_remarks_date: remarksDate ? new Date(remarksDate).toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reviewId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast.success('Reviewer remarks updated')
+      setEditingRemarks(null)
+      setRemarksText('')
+      setRemarksDate('')
+      void queryClient.invalidateQueries({ queryKey: ['team-reviews', team.id] })
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to update remarks')
+    },
+  })
+
+  const startEditingRemarks = (review: typeof sortedReviews[0]) => {
+    setEditingRemarks(review.id)
+    setRemarksText(review.reviewer_remarks || '')
+    setRemarksDate(review.reviewer_remarks_date ? toDatetimeLocalValue(review.reviewer_remarks_date) : '')
+  }
 
   return (
     <Card padding="none" className="overflow-hidden">
@@ -78,6 +120,75 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
                       {review.remarks && (
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Notes: {review.remarks}</p>
                       )}
+                      
+                      {/* Reviewer Remarks Section */}
+                      <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 dark:border-sky-800 dark:bg-sky-950/40">
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-sm font-semibold text-sky-900 dark:text-sky-200">Reviewer Remarks</p>
+                          {editingRemarks !== review.id && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => startEditingRemarks(review)}
+                            >
+                              <Pencil className="mr-1 h-3 w-3" />
+                              Edit
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {editingRemarks === review.id ? (
+                          <div className="space-y-2">
+                            <Input
+                              label="Remarks"
+                              value={remarksText}
+                              onChange={(e) => setRemarksText(e.target.value)}
+                              placeholder="Enter your remarks..."
+                              multiline
+                              rows={3}
+                            />
+                            <Input
+                              label="Date"
+                              type="datetime-local"
+                              value={remarksDate}
+                              onChange={(e) => setRemarksDate(e.target.value)}
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => updateRemarksMutation.mutate(review.id)}
+                                disabled={updateRemarksMutation.isPending}
+                              >
+                                <Save className="mr-1 h-3 w-3" />
+                                {updateRemarksMutation.isPending ? 'Saving...' : 'Save'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  setEditingRemarks(null)
+                                  setRemarksText('')
+                                  setRemarksDate('')
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : review.reviewer_remarks ? (
+                          <div>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">{review.reviewer_remarks}</p>
+                            {review.reviewer_remarks_date && (
+                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Date: {formatReviewDateTime(review.reviewer_remarks_date)}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500 dark:text-slate-400 italic">No remarks added yet</p>
+                        )}
+                      </div>
+                      
                       <ReviewFileDownloads teamId={team.id} reviewId={review.id} />
                       <ZerothReviewMarksPanel
                         teamId={team.id}

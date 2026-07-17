@@ -139,14 +139,16 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
                         
                         {editingRemarks === review.id ? (
                           <div className="space-y-2">
-                            <Input
-                              label="Remarks"
-                              value={remarksText}
-                              onChange={(e) => setRemarksText(e.target.value)}
-                              placeholder="Enter your remarks..."
-                              multiline
-                              rows={3}
-                            />
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Remarks</label>
+                              <textarea
+                                value={remarksText}
+                                onChange={(e) => setRemarksText(e.target.value)}
+                                placeholder="Enter your remarks..."
+                                rows={3}
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-600 dark:bg-app-surface dark:text-slate-100 dark:focus:border-primary-400"
+                              />
+                            </div>
                             <Input
                               label="Date"
                               type="datetime-local"

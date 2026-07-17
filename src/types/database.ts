@@ -144,3 +144,14 @@ export interface PortalSettings {
   selection_blocked: boolean
   updated_at: string
 }
+
+export interface StudentAttendance {
+  id: string
+  student_id: string
+  team_id: string
+  attendance_date: string
+  status: 'present' | 'absent'
+  marked_by: string
+  created_at: string
+  updated_at: string
+}

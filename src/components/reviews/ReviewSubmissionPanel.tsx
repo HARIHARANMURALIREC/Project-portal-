@@ -33,6 +33,7 @@ function FileUploadZone({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const Icon = FileText
   const enabled = canUpload && !disabledReason
 
@@ -56,7 +57,18 @@ function FileUploadZone({
       return
     }
     
-    onUpload(file, fileType)
+    setSelectedFile(file)
+  }
+
+  const handleUpload = () => {
+    if (selectedFile) {
+      onUpload(selectedFile, fileType)
+      setSelectedFile(null)
+    }
+  }
+
+  const handleCancelSelection = () => {
+    setSelectedFile(null)
   }
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
@@ -92,10 +104,10 @@ function FileUploadZone({
         tabIndex={enabled ? 0 : -1}
         aria-disabled={!enabled || uploading}
         onClick={() => {
-          if (enabled && !uploading) inputRef.current?.click()
+          if (enabled && !uploading && !selectedFile) inputRef.current?.click()
         }}
         onKeyDown={(event) => {
-          if ((event.key === 'Enter' || event.key === ' ') && enabled && !uploading) {
+          if ((event.key === 'Enter' || event.key === ' ') && enabled && !uploading && !selectedFile) {
             event.preventDefault()
             inputRef.current?.click()
           }
@@ -107,15 +119,17 @@ function FileUploadZone({
           dragOver
             ? 'border-violet-500 bg-violet-50 dark:border-violet-400 dark:bg-violet-950/40'
             : 'border-slate-300 bg-slate-50/80 dark:border-slate-600 dark:bg-slate-900/40'
-        } ${enabled && !uploading ? 'cursor-pointer hover:border-violet-400 hover:bg-violet-50/70 dark:hover:border-violet-500 dark:hover:bg-violet-950/30' : 'cursor-not-allowed opacity-70'}`}
+        } ${enabled && !uploading && !selectedFile ? 'cursor-pointer hover:border-violet-400 hover:bg-violet-50/70 dark:hover:border-violet-500 dark:hover:bg-violet-950/30' : 'cursor-not-allowed opacity-70'}`}
       >
         <FileUp className="mx-auto h-8 w-8 text-violet-600 dark:text-violet-400" />
         <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
           {uploading
             ? 'Uploading…'
-            : enabled
-              ? 'Click or drag file to upload'
-              : (disabledReason ?? 'Upload unavailable')}
+            : selectedFile
+              ? `Selected: ${selectedFile.name}`
+              : enabled
+                ? 'Click or drag file to upload'
+                : (disabledReason ?? 'Upload unavailable')}
         </p>
         {existing ? (
           <p className="mt-1 truncate text-xs text-emerald-700 dark:text-emerald-300">
@@ -128,6 +142,27 @@ function FileUploadZone({
           Required filename: <span className="font-mono">{suggestedName}</span>
         </p>
       </div>
+
+      {selectedFile && (
+        <div className="mt-3 flex gap-2">
+          <Button
+            size="sm"
+            onClick={handleUpload}
+            disabled={uploading}
+          >
+            <FileUp className="mr-1 h-3.5 w-3.5" />
+            Upload
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleCancelSelection}
+            disabled={uploading}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
 
       <input
         ref={inputRef}

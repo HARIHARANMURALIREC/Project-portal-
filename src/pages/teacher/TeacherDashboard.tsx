@@ -17,6 +17,7 @@ import { useTeacherTeams } from '@/hooks/useTeacherTeams'
 import { fetchCoordinatorRemarksForTeam, formatReviewDateTime } from '@/lib/reviews'
 import { fetchSupervisorInstructionsForTeam, formatSupervisorInstructionDateTime, deleteSupervisorInstruction } from '@/lib/supervisorNotes'
 import { SupervisorInstructionScheduler } from '@/components/teacher/SupervisorInstructionScheduler'
+import { StudentAttendancePanel } from '@/components/teacher/StudentAttendance'
 import { Trash2 } from 'lucide-react'
 
 function TeacherDashboardContent() {
@@ -149,6 +150,17 @@ function TeacherDashboardContent() {
       <section className="mb-8">
         <SupervisorInstructionScheduler />
       </section>
+
+      {teams.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Student Attendance</h2>
+          <div className="space-y-4">
+            {teams.map((team) => (
+              <StudentAttendancePanel key={team.id} team={team} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">

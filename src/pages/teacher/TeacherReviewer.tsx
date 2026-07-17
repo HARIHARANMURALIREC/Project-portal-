@@ -17,6 +17,7 @@ import { sortTeamMembers } from '@/lib/teamSort'
 import { formatReviewDateTime, isReviewCompleted, toDatetimeLocalValue } from '@/lib/reviews'
 import { isZerothReview } from '@/lib/reviewMarks'
 import { supabase } from '@/lib/supabase'
+import { StudentAttendancePanel } from '@/components/teacher/StudentAttendance'
 import type { TeamWithDetails } from '@/types/database'
 
 function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
@@ -220,7 +221,7 @@ function TeacherReviewerContent() {
   const { data: teams = [], isLoading } = useReviewerTeams()
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {isLoading ? (
         <TableSkeleton rows={6} />
       ) : teams.length === 0 ? (
@@ -228,7 +229,22 @@ function TeacherReviewerContent() {
           No teams assigned to you as reviewer yet.
         </Card>
       ) : (
-        teams.map((team) => <ReviewerTeamPanel key={team.id} team={team} />)
+        <>
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Student Attendance</h2>
+            <div className="space-y-4">
+              {teams.map((team) => (
+                <StudentAttendancePanel key={team.id} team={team} />
+              ))}
+            </div>
+          </section>
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Team Reviews</h2>
+            <div className="space-y-4">
+              {teams.map((team) => <ReviewerTeamPanel key={team.id} team={team} />)}
+            </div>
+          </section>
+        </>
       )}
     </div>
   )

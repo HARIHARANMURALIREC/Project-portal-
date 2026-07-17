@@ -1,6 +1,9 @@
 -- Update RLS policies to allow supervisors to read reviewer remarks
 -- Reviewer remarks should be visible to students and their respective supervisors
 
+-- Drop any conflicting policies that might exist
+drop policy if exists "Supervisors and Reviewers can update team reviews" on team_reviews;
+
 -- Update teacher_can_read_team_reviews to include reviewers
 create or replace function teacher_can_read_team_reviews(p_team_id uuid)
 returns boolean

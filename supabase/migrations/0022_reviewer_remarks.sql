@@ -26,6 +26,7 @@ $$;
 
 -- Drop existing update policy and recreate with reviewer support
 drop policy if exists "Supervisors can update team reviews" on team_reviews;
+drop policy if exists "Supervisors and Reviewers can update team reviews" on team_reviews;
 
 create policy "Supervisors and Reviewers can update team reviews"
   on team_reviews for update

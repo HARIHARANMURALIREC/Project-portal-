@@ -148,7 +148,7 @@ export function LoginPage() {
 
     const teamMatches = await verifyStudentTeam(data.teamId)
     if (!teamMatches) {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'local' })
       toast.error('Team ID does not match your account.')
       return
     }

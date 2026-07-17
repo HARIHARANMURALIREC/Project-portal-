@@ -79,7 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
+    // Local scope avoids /auth/v1/logout?scope=global 403s when the server session
+    // is already missing/expired, while still clearing the browser session.
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
+    if (error) {
+      console.warn('signOut failed:', error.message)
+    }
   }, [])
 
   const value = useMemo(

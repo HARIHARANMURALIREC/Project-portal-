@@ -10,9 +10,7 @@ import {
   fetchAttendanceForTeam,
   markAttendance,
   deleteAttendance,
-  formatAttendanceDate,
   getTodayDateString,
-  type StudentAttendance,
 } from '@/lib/attendance'
 import { useAuth } from '@/hooks/useAuth'
 import { sortTeamMembers } from '@/lib/teamSort'

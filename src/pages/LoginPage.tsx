@@ -16,7 +16,7 @@ import {
 } from '@/lib/supabase'
 import { fetchPortalOpen } from '@/lib/portal'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
-import { teacherHomePath } from '@/lib/teacherRoutes'
+import { isCoordinatorPortalUser, teacherHomePath } from '@/lib/teacherRoutes'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -25,6 +25,7 @@ import { AppLogo } from '@/components/AppLogo'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { branding } from '@/config/branding'
+import type { Profile } from '@/types/database'
 
 const studentLoginSchema = z.object({
   teamId: z
@@ -64,6 +65,17 @@ async function verifyStudentTeam(teamId: string): Promise<boolean> {
   if (!batchCode) return false
 
   return normalizeTeamCode(batchCode) === normalizeTeamCode(teamId)
+}
+
+async function fetchLoginProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error) return null
+  return data as Profile
 }
 
 export function LoginPage() {
@@ -170,7 +182,7 @@ export function LoginPage() {
       return
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password: data.password,
     })
@@ -185,6 +197,13 @@ export function LoginPage() {
           ? ' Check your coordinator email and password.'
           : ''
       toast.error(error.message + hint)
+      return
+    }
+
+    const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
+    if (!isCoordinatorPortalUser(loginProfile)) {
+      await supabase.auth.signOut({ scope: 'local' })
+      toast.error('This account is not a coordinator. Sign in on the Supervisor tab.')
       return
     }
 
@@ -205,7 +224,7 @@ export function LoginPage() {
       return
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password: data.password,
     })
@@ -220,6 +239,13 @@ export function LoginPage() {
           ? ' Check your supervisor email and password.'
           : ''
       toast.error(error.message + hint)
+      return
+    }
+
+    const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
+    if (isCoordinatorPortalUser(loginProfile)) {
+      await supabase.auth.signOut({ scope: 'local' })
+      toast.error('Coordinator accounts can only sign in on the Coordinator tab.')
       return
     }
 

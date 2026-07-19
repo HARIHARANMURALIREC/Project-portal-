@@ -15,10 +15,16 @@ import {
 import { CoordinatorReviewScheduler } from '@/components/coordinator/CoordinatorReviewScheduler'
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
 import { fetchAllCoordinatorTeams } from '@/lib/coordinatorData'
+import { useAuth } from '@/hooks/useAuth'
+import { getBatchLabel, getBatchIdForCoordinator } from '@/lib/batchCoordinators'
+import { isLeadCoordinator } from '@/lib/teacherRoutes'
 import { teamBatchOptions, teamMatchesFilters, uniqueSorted } from '@/lib/teamFilters'
 import type { TeamWithDetails } from '@/types/database'
 
 export function CoordinatorDashboard() {
+  const { profile } = useAuth()
+  const isLead = isLeadCoordinator(profile)
+  const batchId = getBatchIdForCoordinator(profile)
   const [batchFilter, setBatchFilter] = useState('')
   const [supervisorFilter, setSupervisorFilter] = useState('')
   const [reviewerFilter, setReviewerFilter] = useState('')
@@ -96,6 +102,12 @@ export function CoordinatorDashboard() {
 
   return (
     <CoordinatorPageShell title="Coordinator Dashboard" activeNav="overview">
+      {!isLead && batchId && (
+        <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
+          Section view for <span className="font-semibold">{getBatchLabel(batchId)}</span> — same
+          Dashboard, Uploads, and Marks pages as the lead coordinator.
+        </p>
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">
           <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800 bg-white dark:bg-app-surface ring-1 ring-violet-50 dark:ring-violet-900">
@@ -120,14 +132,16 @@ export function CoordinatorDashboard() {
 
       <Card className="mb-6" padding="md">
         <div className="flex flex-wrap items-end gap-3">
-          <Select label="Batch" value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)}>
-            <option value="">All batches</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.label}
-              </option>
-            ))}
-          </Select>
+          {isLead && (
+            <Select label="Batch" value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)}>
+              <option value="">All batches</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.label}
+                </option>
+              ))}
+            </Select>
+          )}
           <Select
             label="Supervisor"
             value={supervisorFilter}
@@ -174,9 +188,18 @@ export function CoordinatorDashboard() {
         </div>
       </Card>
 
-      <section className="mb-8">
-        <CoordinatorReviewScheduler />
-      </section>
+      {isLead ? (
+        <section className="mb-8">
+          <CoordinatorReviewScheduler />
+        </section>
+      ) : (
+        <Card className="mb-8" padding="md">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Common review dates are set by the lead coordinator. You can view uploads and marks for
+            your section on the Uploads and Marks pages.
+          </p>
+        </Card>
+      )}
 
       {isLoading ? (
         <TableSkeleton rows={8} />

@@ -5,7 +5,7 @@ import {
 } from '@/components/layout/CoordinatorDashboardLayout'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/hooks/useAuth'
-import { isLeadCoordinator } from '@/lib/teacherRoutes'
+import { coordinatorRoleLabel, isCoordinatorPortalUser } from '@/lib/teacherRoutes'
 
 export function CoordinatorPageShell({
   title,
@@ -26,7 +26,7 @@ export function CoordinatorPageShell({
     )
   }
 
-  if (!isLeadCoordinator(profile)) {
+  if (!isCoordinatorPortalUser(profile)) {
     return <Navigate to="/teacher" replace />
   }
 
@@ -35,6 +35,7 @@ export function CoordinatorPageShell({
       title={title}
       activeNav={activeNav}
       userName={profile?.full_name ?? undefined}
+      roleLabel={coordinatorRoleLabel(profile)}
       onSignOut={signOut}
     >
       {children}

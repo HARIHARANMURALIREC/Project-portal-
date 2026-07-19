@@ -3,7 +3,7 @@ import { TeacherDashboardLayout } from '@/components/layout/TeacherDashboardLayo
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/hooks/useAuth'
 import { getBatchIdForCoordinator } from '@/lib/batchCoordinators'
-import { isLeadCoordinator } from '@/lib/teacherRoutes'
+import { isCoordinatorPortalUser } from '@/lib/teacherRoutes'
 import type { TeacherNavKey } from '@/types/teacher'
 
 interface TeacherPageShellProps {
@@ -24,7 +24,7 @@ export function TeacherPageShell({ title, activeNav, children }: TeacherPageShel
     )
   }
 
-  if (isLeadCoordinator(profile)) {
+  if (isCoordinatorPortalUser(profile)) {
     return <Navigate to="/coordinator" replace />
   }
 

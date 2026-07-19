@@ -288,7 +288,7 @@ export function TeacherDashboardLayout({
               <div className="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
                 <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800 sm:px-3">
-                  Supervisor
+                  {batchId ? 'Coordinator · Supervisor · Reviewer' : 'Supervisor · Reviewer'}
                 </span>
               </div>
             </div>

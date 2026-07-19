@@ -22,6 +22,7 @@ interface CoordinatorDashboardLayoutProps {
   title: string
   activeNav: CoordinatorNavKey
   userName?: string
+  roleLabel?: string
   onSignOut: () => void
   children: React.ReactNode
 }
@@ -59,6 +60,7 @@ function navLinkClass(active: boolean, collapsed: boolean) {
 interface SidebarContentProps {
   activeNav: CoordinatorNavKey
   userName?: string
+  roleLabel?: string
   onSignOut: () => void
   onNavigate?: () => void
   showCloseButton?: boolean
@@ -70,6 +72,7 @@ interface SidebarContentProps {
 function SidebarContent({
   activeNav,
   userName,
+  roleLabel = 'Lead Coordinator',
   onSignOut,
   onNavigate,
   showCloseButton,
@@ -104,7 +107,7 @@ function SidebarContent({
 
       {!collapsed && (
         <p className="border-b border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          Role: <span className="font-medium text-slate-700 dark:text-slate-300">Lead Coordinator</span>
+          Role: <span className="font-medium text-slate-700 dark:text-slate-300">{roleLabel}</span>
         </p>
       )}
 
@@ -170,6 +173,7 @@ export function CoordinatorDashboardLayout({
   title,
   activeNav,
   userName,
+  roleLabel = 'Lead Coordinator',
   onSignOut,
   children,
 }: CoordinatorDashboardLayoutProps) {
@@ -200,6 +204,7 @@ export function CoordinatorDashboardLayout({
         <SidebarContent
           activeNav={activeNav}
           userName={userName}
+          roleLabel={roleLabel}
           onSignOut={onSignOut}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
@@ -218,6 +223,7 @@ export function CoordinatorDashboardLayout({
             <SidebarContent
               activeNav={activeNav}
               userName={userName}
+              roleLabel={roleLabel}
               onSignOut={onSignOut}
               onNavigate={closeMobileMenu}
               showCloseButton

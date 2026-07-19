@@ -22,6 +22,7 @@
     "normalize-domains:dry-run": "tsx scripts/normalize-domains.ts --dry-run",
     "reset-student-passwords": "tsx scripts/reset-student-passwords.ts",
     "setup-teacher": "tsx scripts/setup-teacher.ts",
+    "setup-batch-coordinator": "tsx scripts/setup-batch-coordinator.ts",
     "setup-supervisor-teachers": "tsx scripts/setup-supervisor-teachers.ts",
     "setup-supervisor-teachers:dry-run": "tsx scripts/setup-supervisor-teachers.ts --dry-run",
     "remove-teacher-portal-accounts": "tsx scripts/remove-teacher-portal-accounts.ts",
@@ -30,6 +31,7 @@
     "apply-migration": "tsx scripts/apply-migration.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@hookform/resolvers": "^5.4.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-query": "^5.101.2",

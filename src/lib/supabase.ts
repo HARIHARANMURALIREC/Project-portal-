@@ -76,7 +76,7 @@ export function resolveLoginEmail(identifier: string): string {
   return regNoToEmail(trimmed)
 }
 
-/** Coordinator login (e.g. baburathinam@rec.edu) — not faculty supervisor accounts. */
+/** Coordinator login — access is resolved from the signed-in teacher profile. */
 export function resolveCoordinatorLoginEmail(identifier: string): string {
   const trimmed = identifier.trim().toLowerCase()
   if (!trimmed.includes('@')) {
@@ -84,9 +84,6 @@ export function resolveCoordinatorLoginEmail(identifier: string): string {
   }
   if (trimmed.endsWith(LEGACY_SUPERVISOR_DOMAIN)) {
     throw new Error('Supervisor accounts use @rajalakshmi.edu.in — sign in on the Supervisor tab')
-  }
-  if (trimmed.endsWith(FACULTY_EMAIL_DOMAIN)) {
-    throw new Error('Faculty supervisors sign in on the Supervisor tab')
   }
   return trimmed
 }

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured, clearLocalAuthSession } from '@/lib/supabase'
 import type { Profile } from '@/types/database'
 
 interface AuthContextValue {
@@ -79,12 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile])
 
   const signOut = useCallback(async () => {
-    // Local scope avoids /auth/v1/logout?scope=global 403s when the server session
-    // is already missing/expired, while still clearing the browser session.
-    const { error } = await supabase.auth.signOut({ scope: 'local' })
-    if (error) {
-      console.warn('signOut failed:', error.message)
-    }
+    await clearLocalAuthSession()
   }, [])
 
   const value = useMemo(

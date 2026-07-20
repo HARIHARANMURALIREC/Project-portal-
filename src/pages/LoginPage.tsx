@@ -9,6 +9,7 @@ import {
   supabase,
   isSupabaseConfigured,
   supabaseConfigError,
+  clearLocalAuthSession,
   resolveCoordinatorLoginEmail,
   resolveSupervisorLoginEmail,
   normalizeTeamCode,
@@ -86,9 +87,10 @@ export function LoginPage() {
   const { data: portalOpen = true } = useQuery({
     queryKey: ['portal-status'],
     queryFn: fetchPortalOpen,
-    enabled: isSupabaseConfigured,
-    refetchInterval: POLL_INTERVALS.portalStatus,
-    refetchOnWindowFocus: true,
+    enabled: isSupabaseConfigured && mode === 'student',
+    refetchInterval: mode === 'student' ? POLL_INTERVALS.portalStatus : false,
+    refetchOnWindowFocus: mode === 'student',
+    retry: 1,
   })
 
   const studentPortalClosed = mode === 'student' && !portalOpen
@@ -160,7 +162,7 @@ export function LoginPage() {
 
     const teamMatches = await verifyStudentTeam(data.teamId)
     if (!teamMatches) {
-      await supabase.auth.signOut({ scope: 'local' })
+      await clearLocalAuthSession()
       toast.error('Team ID does not match your account.')
       return
     }
@@ -202,7 +204,7 @@ export function LoginPage() {
 
     const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
     if (!isCoordinatorPortalUser(loginProfile)) {
-      await supabase.auth.signOut({ scope: 'local' })
+      await clearLocalAuthSession()
       toast.error('This account is not a coordinator. Sign in on the Supervisor tab.')
       return
     }
@@ -244,7 +246,7 @@ export function LoginPage() {
 
     const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
     if (isCoordinatorPortalUser(loginProfile)) {
-      await supabase.auth.signOut({ scope: 'local' })
+      await clearLocalAuthSession()
       toast.error('Coordinator accounts can only sign in on the Coordinator tab.')
       return
     }

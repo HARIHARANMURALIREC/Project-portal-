@@ -107,7 +107,7 @@ async function main() {
   console.log(`  Batch:    ${coordinatorRow.batch_id}`)
   console.log(`  Email:    ${EMAIL}`)
   console.log(`  Password: ${PASSWORD}`)
-  console.log('Sign in on the Supervisor tab. The batch dashboard appears for their section.')
+  console.log('Sign in on the Coordinator tab. The batch dashboard appears for their section.')
 }
 
 main().catch((err) => {

@@ -9,8 +9,11 @@ function extractSupabaseUrl(value: string | undefined): string | undefined {
 
 function extractAnonKey(value: string | undefined): string | undefined {
   if (!value) return undefined
-  const match = value.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)
-  return match?.[0]
+  const trimmed = value.trim().split(/\s+/)[0]
+  const jwtMatch = trimmed.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)
+  if (jwtMatch?.[0]) return jwtMatch[0]
+  if (/^sb_publishable_[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed
+  return undefined
 }
 
 const supabaseUrl = extractSupabaseUrl(import.meta.env.VITE_SUPABASE_URL)
@@ -44,6 +47,32 @@ export const supabase = createClient(
   configuredUrl ?? 'https://placeholder.supabase.co',
   configuredKey ?? 'placeholder-anon-key',
 )
+
+function supabaseProjectRef(): string | null {
+  if (!configuredUrl) return null
+  try {
+    return new URL(configuredUrl).hostname.split('.')[0] ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Clear browser auth state without requiring a successful /auth/v1/logout call. */
+export async function clearLocalAuthSession(): Promise<void> {
+  const ref = supabaseProjectRef()
+  if (ref) {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(`sb-${ref}-`)) {
+        localStorage.removeItem(key)
+      }
+    }
+  }
+  try {
+    await supabase.auth.signOut({ scope: 'local' })
+  } catch {
+    // Storage is already cleared; ignore server logout failures (403, network, etc.).
+  }
+}
 
 export const STUDENT_EMAIL_DOMAIN = '@student.portal'
 export const FACULTY_EMAIL_DOMAIN = '@rajalakshmi.edu.in'

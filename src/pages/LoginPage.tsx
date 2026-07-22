@@ -210,6 +210,13 @@ export function LoginPage() {
       return
     }
 
+    // Admin accounts sign in via the Coordinator tab
+    if (loginProfile.role === 'admin') {
+      toast.success('Signed in successfully')
+      navigate('/admin', { replace: true })
+      return
+    }
+
     if (!isCoordinatorPortalUser(loginProfile)) {
       await clearLocalAuthSession()
       toast.error('This account is not a coordinator. Sign in on the Supervisor tab.')

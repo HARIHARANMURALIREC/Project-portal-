@@ -3,7 +3,7 @@ import { TeacherDashboardLayout } from '@/components/layout/TeacherDashboardLayo
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/hooks/useAuth'
 import { getBatchIdForCoordinator } from '@/lib/batchCoordinators'
-import { isCoordinatorPortalUser } from '@/lib/teacherRoutes'
+import { isCoordinatorPortalUser, isBatchCoordinatorSupervisor } from '@/lib/teacherRoutes'
 import type { TeacherNavKey } from '@/types/teacher'
 
 interface TeacherPageShellProps {
@@ -15,6 +15,7 @@ interface TeacherPageShellProps {
 export function TeacherPageShell({ title, activeNav, children }: TeacherPageShellProps) {
   const { profile, signOut, loading } = useAuth()
   const batchId = getBatchIdForCoordinator(profile)
+  const isDualRole = isBatchCoordinatorSupervisor(profile)
 
   if (loading) {
     return (
@@ -24,7 +25,9 @@ export function TeacherPageShell({ title, activeNav, children }: TeacherPageShel
     )
   }
 
-  if (isCoordinatorPortalUser(profile)) {
+  // Pure coordinators (no supervisor_name) cannot access /teacher — redirect to /coordinator.
+  // Batch coordinators who are also supervisors (isBatchCoordinatorSupervisor) are allowed through.
+  if (isCoordinatorPortalUser(profile) && !isDualRole) {
     return <Navigate to="/coordinator" replace />
   }
 
@@ -52,6 +55,7 @@ export function TeacherPageShell({ title, activeNav, children }: TeacherPageShel
       userName={profile.full_name ?? undefined}
       supervisorName={profile.supervisor_name}
       batchId={batchId}
+      showCoordinatorSwitch={isDualRole}
       onSignOut={signOut}
     >
       {children}

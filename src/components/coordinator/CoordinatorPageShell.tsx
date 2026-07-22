@@ -5,7 +5,7 @@ import {
 } from '@/components/layout/CoordinatorDashboardLayout'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/hooks/useAuth'
-import { coordinatorRoleLabel, isCoordinatorPortalUser } from '@/lib/teacherRoutes'
+import { coordinatorRoleLabel, isCoordinatorPortalUser, isBatchCoordinatorSupervisor } from '@/lib/teacherRoutes'
 
 export function CoordinatorPageShell({
   title,
@@ -36,6 +36,7 @@ export function CoordinatorPageShell({
       activeNav={activeNav}
       userName={profile?.full_name ?? undefined}
       roleLabel={coordinatorRoleLabel(profile)}
+      showSupervisorSwitch={isBatchCoordinatorSupervisor(profile)}
       onSignOut={signOut}
     >
       {children}

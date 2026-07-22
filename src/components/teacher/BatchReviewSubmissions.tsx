@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
+import { TeamProjectTopic } from '@/components/teacher/TeamProjectTopic'
 import { fetchTeamReviews, formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
 import { fetchReviewFilesForTeam } from '@/lib/reviewFiles'
 import { isZerothReview } from '@/lib/reviewMarks'
@@ -89,6 +90,7 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
                       {withFiles.length}/{reviews.length} review(s) have files
                     </span>
                   </div>
+                  <TeamProjectTopic team={team} className="mb-3" />
                   <ul className="space-y-3">
                     {reviews.map((review) => (
                       <li key={review.id} className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-600 dark:bg-app-surface">

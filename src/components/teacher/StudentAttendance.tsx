@@ -14,6 +14,7 @@ import {
 } from '@/lib/attendance'
 import { useAuth } from '@/hooks/useAuth'
 import { sortTeamMembers } from '@/lib/teamSort'
+import { TeamProjectTopic } from '@/components/teacher/TeamProjectTopic'
 import type { TeamWithDetails } from '@/types/database'
 
 interface StudentAttendancePanelProps {
@@ -94,6 +95,7 @@ export function StudentAttendancePanel({ team }: StudentAttendancePanelProps) {
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Mark attendance for {team.batch_code}
           </p>
+          <TeamProjectTopic team={team} className="mt-2" />
         </div>
       </div>
 

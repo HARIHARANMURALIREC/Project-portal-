@@ -18,6 +18,7 @@ import { formatReviewDateTime, isReviewCompleted, toDatetimeLocalValue } from '@
 import { isZerothReview } from '@/lib/reviewMarks'
 import { supabase } from '@/lib/supabase'
 import { StudentAttendancePanel } from '@/components/teacher/StudentAttendance'
+import { TeamProjectTopic } from '@/components/teacher/TeamProjectTopic'
 import type { TeamWithDetails } from '@/types/database'
 
 function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
@@ -94,6 +95,7 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
             )}
           </div>
           <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{memberList}</p>
+          <TeamProjectTopic team={team} className="mt-2" />
         </div>
         {expanded ? <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" /> : <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />}
       </button>

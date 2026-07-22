@@ -12,6 +12,16 @@ export function isCoordinatorPortalUser(
   return isLeadCoordinator(profile) || isBatchCoordinator(profile)
 }
 
+/**
+ * Batch coordinators who also supervise teams — they have a supervisor_name that matches
+ * one of the BATCH_COORDINATORS entries. They can access both /coordinator and /teacher.
+ */
+export function isBatchCoordinatorSupervisor(
+  profile: Pick<Profile, 'role' | 'supervisor_name'> | null | undefined,
+): boolean {
+  return isBatchCoordinator(profile) && Boolean(profile?.supervisor_name)
+}
+
 export function coordinatorRoleLabel(
   profile: Pick<Profile, 'role' | 'supervisor_name'> | null | undefined,
 ): string {

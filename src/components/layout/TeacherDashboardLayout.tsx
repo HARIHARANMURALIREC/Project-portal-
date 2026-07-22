@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -11,6 +11,7 @@ import {
   UsersRound,
   PanelLeftClose,
   PanelLeft,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
@@ -26,6 +27,8 @@ interface TeacherDashboardLayoutProps {
   userName?: string
   supervisorName?: string
   batchId?: string | null
+  /** When true, shows a "Switch to Coordinator View" button in the sidebar */
+  showCoordinatorSwitch?: boolean
   onSignOut: () => void
   children: React.ReactNode
 }
@@ -74,6 +77,7 @@ interface SidebarContentProps {
   userName?: string
   supervisorName?: string
   batchId?: string | null
+  showCoordinatorSwitch?: boolean
   onSignOut: () => void
   onNavigate?: () => void
   showCloseButton?: boolean
@@ -87,6 +91,7 @@ function SidebarContent({
   userName,
   supervisorName,
   batchId,
+  showCoordinatorSwitch,
   onSignOut,
   onNavigate,
   showCloseButton,
@@ -95,6 +100,7 @@ function SidebarContent({
   onToggleCollapse,
 }: SidebarContentProps) {
   const navItems = buildNavItems(batchId)
+  const navigate = useNavigate()
 
   return (
     <>
@@ -164,6 +170,22 @@ function SidebarContent({
             {!collapsed && 'Collapse'}
           </button>
         )}
+        {showCoordinatorSwitch && (
+          <button
+            type="button"
+            title="Switch to Coordinator View"
+            onClick={() => {
+              onNavigate?.()
+              navigate('/coordinator')
+            }}
+            className={`mb-2 flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-violet-600 transition hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/40 ${
+              collapsed ? 'justify-center px-2' : 'gap-3 px-3'
+            }`}
+          >
+            <ArrowLeftRight className="h-5 w-5 shrink-0" />
+            {!collapsed && 'Coordinator View'}
+          </button>
+        )}
         {userName && (
           <div className={`mb-3 flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-2'}`} title={userName}>
             <UserAvatar name={userName} />
@@ -197,6 +219,7 @@ export function TeacherDashboardLayout({
   userName,
   supervisorName,
   batchId,
+  showCoordinatorSwitch,
   onSignOut,
   children,
 }: TeacherDashboardLayoutProps) {
@@ -230,6 +253,7 @@ export function TeacherDashboardLayout({
           userName={userName}
           supervisorName={supervisorName}
           batchId={batchId}
+          showCoordinatorSwitch={showCoordinatorSwitch}
           onSignOut={onSignOut}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
@@ -250,6 +274,7 @@ export function TeacherDashboardLayout({
               userName={userName}
               supervisorName={supervisorName}
               batchId={batchId}
+              showCoordinatorSwitch={showCoordinatorSwitch}
               onSignOut={onSignOut}
               onNavigate={closeMobileMenu}
               showCloseButton

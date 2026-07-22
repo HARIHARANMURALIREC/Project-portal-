@@ -17,7 +17,7 @@ import {
 } from '@/lib/supabase'
 import { fetchPortalOpen } from '@/lib/portal'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
-import { isCoordinatorPortalUser, teacherHomePath } from '@/lib/teacherRoutes'
+import { isCoordinatorPortalUser, isBatchCoordinatorSupervisor, teacherHomePath } from '@/lib/teacherRoutes'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -203,6 +203,13 @@ export function LoginPage() {
     }
 
     const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
+
+    if (!loginProfile) {
+      await clearLocalAuthSession()
+      toast.error('Your account profile is missing. Contact the administrator to set up your account.')
+      return
+    }
+
     if (!isCoordinatorPortalUser(loginProfile)) {
       await clearLocalAuthSession()
       toast.error('This account is not a coordinator. Sign in on the Supervisor tab.')
@@ -210,6 +217,7 @@ export function LoginPage() {
     }
 
     toast.success('Signed in successfully')
+    navigate('/coordinator', { replace: true })
   }
 
   async function onSupervisorSubmit(data: SupervisorLoginForm) {
@@ -245,13 +253,21 @@ export function LoginPage() {
     }
 
     const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
-    if (isCoordinatorPortalUser(loginProfile)) {
+
+    if (isCoordinatorPortalUser(loginProfile) && !isBatchCoordinatorSupervisor(loginProfile)) {
       await clearLocalAuthSession()
-      toast.error('Coordinator accounts can only sign in on the Coordinator tab.')
+      toast.error('This account is a batch coordinator. Please sign in on the Coordinator tab instead.')
+      return
+    }
+
+    if (!loginProfile) {
+      await clearLocalAuthSession()
+      toast.error('Your account profile is missing. Contact the administrator to set up your account.')
       return
     }
 
     toast.success('Signed in successfully')
+    navigate('/teacher', { replace: true })
   }
 
   if (loading) {

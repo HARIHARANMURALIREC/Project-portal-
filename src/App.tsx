@@ -9,6 +9,7 @@ import { AdminMarks } from '@/pages/admin/AdminMarks'
 import { CoordinatorDashboard } from '@/pages/CoordinatorDashboard'
 import { CoordinatorUploads } from '@/pages/coordinator/CoordinatorUploads'
 import { CoordinatorMarks } from '@/pages/coordinator/CoordinatorMarks'
+import { CoordinatorProfile } from '@/pages/coordinator/CoordinatorProfile'
 import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
 import { TeacherBatchDashboard } from '@/pages/teacher/TeacherBatchDashboard'
 import { TeacherReviews } from '@/pages/teacher/TeacherReviews'
@@ -87,6 +88,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <CoordinatorMarks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coordinator/profile"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <CoordinatorProfile />
               </ProtectedRoute>
             }
           />

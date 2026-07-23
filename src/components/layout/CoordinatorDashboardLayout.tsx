@@ -10,6 +10,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   ArrowLeftRight,
+  User,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'
@@ -17,7 +18,7 @@ import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed'
 
-export type CoordinatorNavKey = 'overview' | 'uploads' | 'marks'
+export type CoordinatorNavKey = 'overview' | 'uploads' | 'marks' | 'profile'
 
 interface CoordinatorDashboardLayoutProps {
   title: string
@@ -39,6 +40,7 @@ const navItems: {
   { key: 'overview', label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard },
   { key: 'uploads', label: 'Uploads', to: '/coordinator/uploads', icon: FileStack },
   { key: 'marks', label: 'Marks', to: '/coordinator/marks', icon: ClipboardList },
+  { key: 'profile', label: 'Profile', to: '/coordinator/profile', icon: User },
 ]
 
 function UserAvatar({ name }: { name: string }) {

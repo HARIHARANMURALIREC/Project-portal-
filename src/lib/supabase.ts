@@ -48,6 +48,12 @@ export const supabase = createClient(
   configuredKey ?? 'placeholder-anon-key',
 )
 
+/** Clean URL/key for ephemeral clients (e.g. password verification). */
+export const supabaseClientConfig =
+  configuredUrl && configuredKey
+    ? { url: configuredUrl, anonKey: configuredKey }
+    : null
+
 function supabaseProjectRef(): string | null {
   if (!configuredUrl) return null
   try {

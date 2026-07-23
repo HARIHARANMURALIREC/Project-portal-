@@ -61,15 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) {
-        setLoading(true)
-        void fetchProfile(session.user.id)
-      } else {
+      if (!session?.user) {
         setProfile(null)
         setLoading(false)
+        return
       }
+
+      // Password updates / token refresh must not flip loading — that remounts
+      // teacher/coordinator shells and aborts in-progress profile forms.
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        void fetchProfile(session.user.id)
+        return
+      }
+
+      setLoading(true)
+      void fetchProfile(session.user.id)
     })
 
     return () => {

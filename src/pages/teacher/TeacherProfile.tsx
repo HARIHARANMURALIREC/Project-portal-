@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
+import { changeSignedInPassword } from '@/lib/changePassword'
 import { markSupervisorPasswordChanged } from '@/lib/adminSupervisors'
 
 const changePasswordSchema = z
@@ -38,21 +38,21 @@ function TeacherProfileContent() {
   })
 
   async function onChangePassword(data: ChangePasswordForm) {
+    if (!user?.email) {
+      toast.error('Unable to verify your account.')
+      return
+    }
+
     setChangingPassword(true)
     try {
-      // updateUser validates the current password server-side
-      // Do NOT call signInWithPassword as it triggers onAuthStateChange
-      // and causes the form to reset mid-flow
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.newPassword,
+      const result = await changeSignedInPassword({
+        email: user.email,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
       })
 
-      if (updateError) {
-        if (updateError.message.toLowerCase().includes('password') || updateError.status === 422) {
-          toast.error('Current password is incorrect.')
-        } else {
-          toast.error(updateError.message)
-        }
+      if (!result.ok) {
+        toast.error(result.message)
         return
       }
 
@@ -61,7 +61,7 @@ function TeacherProfileContent() {
       })
 
       passwordForm.reset()
-      toast.success('Password updated successfully')
+      toast.success('Password updated successfully. Use your new password next time you sign in.')
     } finally {
       setChangingPassword(false)
     }

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Upload, Download, Trash2, BookOpen, FileText, Presentation, Newspaper, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Upload, Download, Eye, Trash2, BookOpen, FileText, Presentation, Newspaper, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Card } from '@/components/ui/Card'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
@@ -67,11 +67,27 @@ function CoordinatorTemplateCard({
     }
   }
 
-  const handleDownload = async () => {
+  const handleView = async () => {
     if (!existing) return
     try {
       const url = await getTemplateFileUrl(existing.storage_path)
       window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      toast.error('Could not open file')
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!existing) return
+    try {
+      const url = await getTemplateFileUrl(existing.storage_path)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = existing.original_filename
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     } catch {
       toast.error('Download failed')
     }
@@ -104,10 +120,13 @@ function CoordinatorTemplateCard({
                 <span className="truncate font-medium text-emerald-800 dark:text-emerald-300">{existing.original_filename}</span>
               </div>
               <div className="flex shrink-0 gap-1">
-                <button type="button" onClick={() => void handleDownload()} className="rounded p-1 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/40">
+                <button type="button" title="View" onClick={() => void handleView()} className="rounded p-1.5 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/40">
+                  <Eye className="h-3.5 w-3.5" />
+                </button>
+                <button type="button" title="Download" onClick={() => void handleDownload()} className="rounded p-1.5 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/40">
                   <Download className="h-3.5 w-3.5" />
                 </button>
-                <button type="button" onClick={() => void handleDelete()} disabled={deleting} className="rounded p-1 text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/40">
+                <button type="button" title="Delete" onClick={() => void handleDelete()} disabled={deleting} className="rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/40">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -181,10 +200,25 @@ export function CoordinatorTemplatesPanel() {
     uploadsByTeam.set(u.team_id, list)
   }
 
-  const handleDownload = async (storagePath: string) => {
+  const handleView = async (storagePath: string) => {
     try {
       const url = await getTemplateFileUrl(storagePath)
       window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      toast.error('Could not open file')
+    }
+  }
+
+  const handleDownload = async (storagePath: string, filename: string) => {
+    try {
+      const url = await getTemplateFileUrl(storagePath)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     } catch {
       toast.error('Download failed')
     }
@@ -237,7 +271,7 @@ export function CoordinatorTemplatesPanel() {
                   <th className="px-4 py-3">Supervisor</th>
                   <th className="px-4 py-3">Document</th>
                   <th className="px-4 py-3">File</th>
-                  <th className="px-4 py-3">Download</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -267,14 +301,26 @@ export function CoordinatorTemplatesPanel() {
                           <p className="text-[10px] text-slate-400">{new Date(upload.created_at).toLocaleDateString()}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => void handleDownload(upload.storage_path)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:underline dark:text-violet-300"
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                            Download
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              title="View"
+                              onClick={() => void handleView(upload.storage_path)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:underline dark:text-violet-300"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              title="Download"
+                              onClick={() => void handleDownload(upload.storage_path, upload.original_filename)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:underline dark:text-slate-300"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Download
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )

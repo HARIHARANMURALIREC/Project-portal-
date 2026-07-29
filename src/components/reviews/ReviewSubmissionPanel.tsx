@@ -1,7 +1,7 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Download, FileUp, FileText } from 'lucide-react'
+import { Download, Eye, FileUp, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { useTeamReviewFiles } from '@/hooks/useTeamReviewFiles'
@@ -37,11 +37,27 @@ function FileUploadZone({
   const Icon = FileText
   const enabled = canUpload && !disabledReason
 
-  const handleDownload = async () => {
+  const handleView = async () => {
     if (!existing) return
     try {
       const url = await getReviewFileDownloadUrl(existing.storage_path)
       window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not open file')
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!existing) return
+    try {
+      const url = await getReviewFileDownloadUrl(existing.storage_path)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = existing.original_filename
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Download failed')
     }
@@ -92,10 +108,16 @@ function FileUploadZone({
           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</p>
         </div>
         {existing && (
-          <Button size="sm" variant="secondary" onClick={() => void handleDownload()}>
-            <Download className="mr-1 h-3.5 w-3.5" />
-            Download
-          </Button>
+          <div className="flex shrink-0 gap-1.5">
+            <Button size="sm" variant="secondary" onClick={() => void handleView()} title="View in browser">
+              <Eye className="mr-1 h-3.5 w-3.5" />
+              View
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => void handleDownload()} title="Download to device">
+              <Download className="mr-1 h-3.5 w-3.5" />
+              Download
+            </Button>
+          </div>
         )}
       </div>
 

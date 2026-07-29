@@ -244,6 +244,18 @@ export async function buildReviewFilesZip(
   return zip.generateAsync({ type: 'blob' })
 }
 
+export async function deleteReviewFile(file: TeamReviewFile): Promise<void> {
+  const { error: dbError } = await supabase
+    .from('team_review_files')
+    .delete()
+    .eq('id', file.id)
+
+  if (dbError) throw dbError
+
+  // Best-effort storage removal; ignore errors (file may already be gone)
+  await supabase.storage.from(REVIEW_SUBMISSIONS_BUCKET).remove([file.storage_path])
+}
+
 export function triggerBlobDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

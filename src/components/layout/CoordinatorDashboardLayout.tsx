@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   FileStack,
   ClipboardList,
+  User,
   LogOut,
   Menu,
   X,

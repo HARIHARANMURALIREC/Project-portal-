@@ -4,7 +4,7 @@ import { ReviewUploadsPanel } from '@/components/reviews/ReviewUploadsPanel'
 export function CoordinatorUploads() {
   return (
     <CoordinatorPageShell title="Review Uploads" activeNav="uploads">
-      <ReviewUploadsPanel exportPrefix="coordinator-uploads" />
+      <ReviewUploadsPanel exportPrefix="coordinator-uploads" showDelete={true} />
     </CoordinatorPageShell>
   )
 }

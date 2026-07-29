@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Download, FileArchive } from 'lucide-react'
+import { Download, FileArchive, Trash2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +14,7 @@ import {
 } from '@/lib/coordinatorData'
 import {
   buildReviewFilesZip,
+  deleteReviewFile,
   getReviewFileDownloadUrl,
   triggerBlobDownload,
   type ZipReviewFileEntry,
@@ -49,7 +50,38 @@ function DownloadLink({ file }: { file: TeamReviewFile }) {
   )
 }
 
-export function ReviewUploadsPanel({ exportPrefix = 'review-uploads' }: { exportPrefix?: string } = {}) {
+function DeleteFileButton({ file, onDeleted }: { file: TeamReviewFile; onDeleted: () => void }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      title={`Delete ${file.file_type.toUpperCase()}`}
+      className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+      onClick={() => {
+        if (!window.confirm(`Delete ${file.original_filename}?\n\nThis cannot be undone.`)) return
+        void (async () => {
+          setBusy(true)
+          try {
+            await deleteReviewFile(file)
+            toast.success(`${file.file_type.toUpperCase()} deleted`)
+            onDeleted()
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Delete failed')
+          } finally {
+            setBusy(false)
+          }
+        })()
+      }}
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+      {busy ? '…' : 'Delete'}
+    </button>
+  )
+}
+
+export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete = false }: { exportPrefix?: string; showDelete?: boolean } = {}) {
+  const queryClient = useQueryClient()
   const [batchFilter, setBatchFilter] = useState('')
   const [supervisorFilter, setSupervisorFilter] = useState('')
   const [reviewerFilter, setReviewerFilter] = useState('')
@@ -58,6 +90,9 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads' }: { export
   const [search, setSearch] = useState('')
   const [zipBusy, setZipBusy] = useState(false)
   const [zipProgress, setZipProgress] = useState<string | null>(null)
+
+  const invalidateFiles = () =>
+    void queryClient.invalidateQueries({ queryKey: ['coordinator-all-review-files'] })
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['coordinator-teams'],
@@ -424,7 +459,12 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads' }: { export
                         <td className="px-4 py-3">
                           {pdf ? (
                             <div>
-                              <DownloadLink file={pdf} />
+                              <div className="flex items-center gap-2">
+                                <DownloadLink file={pdf} />
+                                {showDelete && (
+                                  <DeleteFileButton file={pdf} onDeleted={invalidateFiles} />
+                                )}
+                              </div>
                               <p className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500">{pdf.original_filename}</p>
                             </div>
                           ) : (
@@ -434,7 +474,12 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads' }: { export
                         <td className="px-4 py-3">
                           {ppt ? (
                             <div>
-                              <DownloadLink file={ppt} />
+                              <div className="flex items-center gap-2">
+                                <DownloadLink file={ppt} />
+                                {showDelete && (
+                                  <DeleteFileButton file={ppt} onDeleted={invalidateFiles} />
+                                )}
+                              </div>
                               <p className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500">{ppt.original_filename}</p>
                             </div>
                           ) : (

@@ -11,7 +11,6 @@ import {
   PanelLeftClose,
   PanelLeft,
   ArrowLeftRight,
-  User,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { branding } from '@/config/branding'

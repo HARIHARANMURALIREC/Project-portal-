@@ -1,10 +1,10 @@
 import { TeacherPageShell } from '@/components/teacher/TeacherPageShell'
-import { TemplatesPanel } from '@/components/shared/TemplatesPanel'
+import { TeacherTemplatesPanel } from '@/components/shared/TeacherTemplatesPanel'
 
 export function TeacherTemplates() {
   return (
     <TeacherPageShell title="Templates" activeNav="templates">
-      <TemplatesPanel />
+      <TeacherTemplatesPanel />
     </TeacherPageShell>
   )
 }

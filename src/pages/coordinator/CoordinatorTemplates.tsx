@@ -1,10 +1,10 @@
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
-import { TemplatesPanel } from '@/components/shared/TemplatesPanel'
+import { CoordinatorTemplatesPanel } from '@/components/shared/CoordinatorTemplatesPanel'
 
 export function CoordinatorTemplates() {
   return (
     <CoordinatorPageShell title="Templates" activeNav="templates">
-      <TemplatesPanel />
+      <CoordinatorTemplatesPanel />
     </CoordinatorPageShell>
   )
 }

@@ -1,10 +1,10 @@
 import { StudentPageShell } from '@/components/student/StudentPageShell'
-import { TemplatesPanel } from '@/components/shared/TemplatesPanel'
+import { StudentTemplatesPanel } from '@/components/shared/StudentTemplatesPanel'
 
 export function StudentUploads() {
   return (
     <StudentPageShell title="Uploads" activeNav="uploads">
-      {() => <TemplatesPanel />}
+      {() => <StudentTemplatesPanel />}
     </StudentPageShell>
   )
 }

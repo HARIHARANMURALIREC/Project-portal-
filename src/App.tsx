@@ -10,11 +10,13 @@ import { CoordinatorDashboard } from '@/pages/CoordinatorDashboard'
 import { CoordinatorUploads } from '@/pages/coordinator/CoordinatorUploads'
 import { CoordinatorMarks } from '@/pages/coordinator/CoordinatorMarks'
 import { CoordinatorProfile } from '@/pages/coordinator/CoordinatorProfile'
+import { CoordinatorTemplates } from '@/pages/coordinator/CoordinatorTemplates'
 import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
 import { TeacherBatchDashboard } from '@/pages/teacher/TeacherBatchDashboard'
 import { TeacherReviews } from '@/pages/teacher/TeacherReviews'
 import { TeacherReviewer } from '@/pages/teacher/TeacherReviewer'
 import { TeacherProfile } from '@/pages/teacher/TeacherProfile'
+import { TeacherTemplates } from '@/pages/teacher/TeacherTemplates'
 import { StudentDashboard } from '@/pages/student/StudentDashboard'
 import { AvailableTopics } from '@/pages/student/AvailableTopics'
 import { MyProject } from '@/pages/student/MyProject'
@@ -101,6 +103,14 @@ export default function App() {
             }
           />
           <Route
+            path="/coordinator/templates"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <CoordinatorTemplates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/teacher"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
@@ -137,6 +147,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <TeacherProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/templates"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherTemplates />
               </ProtectedRoute>
             }
           />

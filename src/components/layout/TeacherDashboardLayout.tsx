@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   CalendarCheck,
   ClipboardCheck,
+  Upload,
   User,
   LogOut,
   Menu,
@@ -48,6 +49,7 @@ function buildNavItems(batchId?: string | null) {
   items.push(
     { key: 'reviews', label: 'Reviews', to: '/teacher/reviews', icon: CalendarCheck },
     { key: 'reviewer', label: 'Reviewer', to: '/teacher/reviewer', icon: ClipboardCheck },
+    { key: 'templates', label: 'Templates', to: '/teacher/templates', icon: Upload },
     { key: 'profile', label: 'Profile', to: '/teacher/profile', icon: User },
   )
   return items

@@ -6,6 +6,7 @@ import {
   BookOpen,
   CalendarCheck,
   FileText,
+  Upload,
   User,
   LogOut,
   Menu,
@@ -35,6 +36,7 @@ const navItems: { key: StudentNavKey; label: string; to: string; icon: typeof La
   { key: 'project', label: 'My Project', to: '/student/my-project', icon: BookOpen },
   { key: 'reviews', label: 'Reviews', to: '/student/reviews', icon: CalendarCheck },
   { key: 'details', label: 'Daily Interactions', to: '/student/details', icon: FileText },
+  { key: 'uploads', label: 'Uploads', to: '/student/uploads', icon: Upload },
   { key: 'profile', label: 'Profile', to: '/student/profile', icon: User },
 ]
 

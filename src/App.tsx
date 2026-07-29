@@ -21,6 +21,7 @@ import { MyProject } from '@/pages/student/MyProject'
 import { StudentReviews } from '@/pages/student/StudentReviews'
 import { StudentDetails } from '@/pages/student/StudentDetails'
 import { StudentProfile } from '@/pages/student/StudentProfile'
+import { StudentUploads } from '@/pages/student/StudentUploads'
 import { useTheme } from '@/context/ThemeContext'
 
 const queryClient = new QueryClient({
@@ -184,6 +185,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/uploads"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentUploads />
               </ProtectedRoute>
             }
           />

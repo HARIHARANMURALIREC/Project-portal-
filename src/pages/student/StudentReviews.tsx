@@ -1,6 +1,5 @@
 import { CalendarCheck } from 'lucide-react'
 import { StudentPageShell } from '@/components/student/StudentPageShell'
-import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
 import { ReviewSubmissionPanel, ReviewUploadPlaceholder } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewRubricsInfo } from '@/components/reviews/ZerothReviewRubricsInfo'
 import { Card } from '@/components/ui/Card'
@@ -55,7 +54,7 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
                 key={review.id}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/80"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
@@ -89,7 +88,6 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
                       </div>
                     )}
                   </div>
-                  <ReviewStatusBadge review={review} />
                 </div>
                 <ZerothReviewRubricsInfo reviewTitle={review.review_title} />
                 <ReviewSubmissionPanel

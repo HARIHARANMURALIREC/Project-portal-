@@ -434,9 +434,6 @@ export function CoordinatorReviewScheduler() {
                               Notes: {schedule.remarks}
                             </p>
                           )}
-                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                            {schedule.completed_count}/{schedule.teams_count} teams completed · click to view by supervisor
-                          </p>
                         </button>
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" variant="secondary" onClick={() => startEdit(schedule)}>

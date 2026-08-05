@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Globe2 } from 'lucide-react'
+import { toast } from 'sonner'
+import * as XLSX from 'xlsx'
+import { Download, Globe2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { fetchAllTeamSdgEntries, getSdgLabel } from '@/lib/sdg'
 import type { TeamWithDetails } from '@/types/database'
@@ -33,6 +36,41 @@ export function TeamSdgOverviewPanel({ teams }: { teams: TeamWithDetails[] }) {
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
   }, [teams])
 
+  const exportExcel = () => {
+    const exportRows = teams.flatMap((team) => {
+      const batch = team.batches?.name ?? team.batch_id ?? ''
+      const teamEntries = entriesByTeam.get(team.id) ?? []
+      const base = {
+        Batch: batch,
+        'Team ID': team.batch_code,
+        'Project Title': team.projects?.title?.trim() ?? '',
+        Supervisor: team.supervisor_name ?? '',
+        Reviewer: team.reviewer_name ?? '',
+      }
+      if (teamEntries.length === 0) {
+        return [
+          {
+            ...base,
+            'SDG Goal': '',
+            Description: '',
+            'Submitted At': '',
+          },
+        ]
+      }
+      return teamEntries.map((entry) => ({
+        ...base,
+        'SDG Goal': getSdgLabel(entry.sdg_goal),
+        Description: entry.description,
+        'Submitted At': new Date(entry.created_at).toLocaleString(),
+      }))
+    })
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), 'SDG')
+    XLSX.writeFile(wb, `team-sdg-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    toast.success('SDG export downloaded')
+  }
+
   if (isLoading) return <TableSkeleton rows={8} />
 
   if (teams.length === 0) {
@@ -46,13 +84,21 @@ export function TeamSdgOverviewPanel({ teams }: { teams: TeamWithDetails[] }) {
   return (
     <div className="space-y-6">
       <Card padding="lg" className="border-emerald-100 dark:border-emerald-800">
-        <div className="mb-2 flex items-center gap-2">
-          <Globe2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Team SDG submissions</h3>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <Globe2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Team SDG submissions</h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              SDG goals and descriptions submitted by each team, grouped by batch.
+            </p>
+          </div>
+          <Button size="sm" variant="secondary" onClick={exportExcel}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            Export Excel
+          </Button>
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          SDG goals and descriptions submitted by each team, grouped by batch.
-        </p>
       </Card>
 
       {teamsByBatch.map(([batchName, batchTeams]) => (
@@ -65,9 +111,16 @@ export function TeamSdgOverviewPanel({ teams }: { teams: TeamWithDetails[] }) {
             return (
               <Card key={team.id} padding="md" className="border-slate-200 dark:border-slate-700">
                 <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                  <div>
-                    <p className="font-mono text-sm font-semibold text-violet-700 dark:text-violet-300">
-                      {team.batch_code}
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="font-mono text-sm font-semibold text-violet-700 dark:text-violet-300">
+                        {team.batch_code}
+                      </span>
+                      {team.projects?.title?.trim() ? (
+                        <span className="min-w-0 text-sm font-medium text-slate-900 dark:text-slate-100">
+                          — {team.projects.title.trim()}
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Supervisor: {team.supervisor_name ?? '—'}

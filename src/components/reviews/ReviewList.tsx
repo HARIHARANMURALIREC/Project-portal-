@@ -35,35 +35,30 @@ export function ReviewList({ reviews, emptyMessage = 'No reviews scheduled yet.'
           key={review.id}
           className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/80"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                {isReviewCompleted(review) ? 'Completed' : 'Pending'}:{' '}
-                {isReviewCompleted(review)
-                  ? formatReviewDateTime(review.completed_at!)
-                  : formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
+          <div>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
+            {isReviewCompleted(review) && review.completed_at ? (
+              <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
+                Completed: {formatReviewDateTime(review.completed_at)}
               </p>
-              {!isReviewCompleted(review) && (
-                <>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
-                  </p>
-                  {(review.announced_at || review.created_at) && (
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      Announcement date:{' '}
-                      {formatReviewDateTime(review.announced_at ?? review.created_at)}
-                    </p>
-                  )}
-                </>
-              )}
-              {review.remarks && (
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium">Notes:</span> {review.remarks}
+            ) : (
+              <>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
                 </p>
-              )}
-            </div>
-            <ReviewStatusBadge review={review} />
+                {(review.announced_at || review.created_at) && (
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Announcement date:{' '}
+                    {formatReviewDateTime(review.announced_at ?? review.created_at)}
+                  </p>
+                )}
+              </>
+            )}
+            {review.remarks && (
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                <span className="font-medium">Notes:</span> {review.remarks}
+              </p>
+            )}
           </div>
         </li>
       ))}

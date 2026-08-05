@@ -51,12 +51,13 @@ function PublicationsPageContent({ context }: { context: StudentContext }) {
     clearFile()
   }
 
-  const canSubmit = details.trim().length > 0
+  const canSubmit = details.trim().length > 0 && file != null
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('Not signed in')
       if (!details.trim()) throw new Error('Details are required')
+      if (!file) throw new Error('Upload a file before submitting')
       return createTeamPublicationEntry({
         teamId,
         status,
@@ -98,8 +99,8 @@ function PublicationsPageContent({ context }: { context: StudentContext }) {
         </div>
         <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">
           Select the current status of your publication, enter details for that stage, and upload the
-          related file. Submitted entries appear below and are visible to your supervisor and
-          coordinator.
+          related file. Submit stays disabled until a file is uploaded. Submitted entries appear below
+          and are visible to your supervisor and coordinator.
         </p>
 
         <div className="grid items-start gap-4 lg:grid-cols-3">

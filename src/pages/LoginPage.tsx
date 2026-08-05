@@ -21,7 +21,6 @@ import { isCoordinatorPortalUser, isBatchCoordinatorSupervisor, teacherHomePath 
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
 import { AppLogo } from '@/components/AppLogo'
 import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -286,8 +285,27 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-app-black">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md dark:bg-app-black/95">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-violet-50 via-slate-50 to-sky-50 dark:from-app-black dark:via-slate-950 dark:to-violet-950">
+      {/* Soft color orbs so the glass panel has something to refract */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-violet-300/40 blur-3xl dark:bg-violet-600/20" />
+        <div className="absolute -right-16 bottom-24 h-80 w-80 rounded-full bg-sky-300/35 blur-3xl dark:bg-sky-600/15" />
+        <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-fuchsia-200/30 blur-3xl dark:bg-fuchsia-700/10" />
+      </div>
+
+      {/* College crest watermark */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
+      >
+        <img
+          src={branding.logoSrc}
+          alt=""
+          className="h-[min(72vh,30rem)] w-auto max-w-[min(92vw,30rem)] select-none object-contain opacity-30 mix-blend-multiply dark:opacity-40 dark:mix-blend-screen"
+        />
+      </div>
+
+      <header className="relative z-40 sticky top-0 border-b border-white/30 bg-white/40 backdrop-blur-xl dark:border-white/10 dark:bg-black/30">
         <div className="flex w-full items-center justify-between gap-4 py-3 pl-3 pr-4 sm:pl-4 sm:pr-6">
           <AppLogo
             size="sm"
@@ -299,34 +317,34 @@ export function LoginPage() {
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
-          <Card padding="lg" className="border-slate-200 dark:border-slate-700 shadow-lg ring-1 ring-slate-100 dark:ring-slate-700">
+          <div className="rounded-2xl border border-white/50 bg-white/35 p-6 shadow-[0_8px_32px_rgba(31,38,135,0.12)] ring-1 ring-white/60 backdrop-blur-2xl dark:border-white/15 dark:bg-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)] dark:ring-white/10">
             <div className="mb-6 text-center">
               <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{branding.portalTitle}</h1>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Sign in to continue</p>
             </div>
 
             {!isSupabaseConfigured && (
-              <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 text-left text-xs text-amber-900 dark:text-amber-200">
+              <div className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-left text-xs text-amber-900 backdrop-blur-sm dark:border-amber-800/60 dark:bg-amber-950/50 dark:text-amber-200">
                 {supabaseConfigError}
               </div>
             )}
 
             {studentPortalClosed && (
-              <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 px-3 py-2 text-left text-xs text-red-900 dark:text-red-200">
+              <div className="mb-4 rounded-lg border border-red-200/80 bg-red-50/70 px-3 py-2 text-left text-xs text-red-900 backdrop-blur-sm dark:border-red-800/60 dark:bg-red-950/50 dark:text-red-200">
                 The portal is currently closed. Student login is disabled. Coordinators, supervisors, and administrators can still sign in.
               </div>
             )}
 
-            <div className="mb-5 flex rounded-lg bg-slate-100 dark:bg-app-surface p-1">
+            <div className="mb-5 flex rounded-xl border border-white/40 bg-white/25 p-1 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
               <button
                 type="button"
                 onClick={() => setMode('student')}
-                className={`flex-1 rounded-md px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
+                className={`flex-1 rounded-lg px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
                   mode === 'student'
-                    ? 'bg-white text-violet-700 shadow-sm dark:bg-app-surface dark:text-violet-300'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-white/90 text-violet-700 shadow-sm backdrop-blur-sm dark:bg-white/20 dark:text-violet-200'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >
                 Student
@@ -334,10 +352,10 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setMode('coordinator')}
-                className={`flex-1 rounded-md px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
+                className={`flex-1 rounded-lg px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
                   mode === 'coordinator'
-                    ? 'bg-white text-violet-700 shadow-sm dark:bg-app-surface dark:text-violet-300'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-white/90 text-violet-700 shadow-sm backdrop-blur-sm dark:bg-white/20 dark:text-violet-200'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >
                 Coordinator
@@ -345,10 +363,10 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setMode('supervisor')}
-                className={`flex-1 rounded-md px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
+                className={`flex-1 rounded-lg px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
                   mode === 'supervisor'
-                    ? 'bg-white text-violet-700 shadow-sm dark:bg-app-surface dark:text-violet-300'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-white/90 text-violet-700 shadow-sm backdrop-blur-sm dark:bg-white/20 dark:text-violet-200'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >
                 Supervisor
@@ -365,6 +383,7 @@ export function LoginPage() {
                 <Input
                   label="Team ID"
                   autoComplete="username"
+                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={studentForm.formState.errors.teamId?.message}
                   {...studentForm.register('teamId')}
                 />
@@ -373,6 +392,7 @@ export function LoginPage() {
                   label="Registration No."
                   type="password"
                   autoComplete="current-password"
+                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={studentForm.formState.errors.password?.message}
                   {...studentForm.register('password')}
                 />
@@ -382,7 +402,7 @@ export function LoginPage() {
                   fullWidth
                   size="lg"
                   disabled={studentForm.formState.isSubmitting || !isSupabaseConfigured}
-                  className="mt-2"
+                  className="mt-2 shadow-lg shadow-violet-500/25"
                 >
                   {studentForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
@@ -394,6 +414,7 @@ export function LoginPage() {
                   label="Email"
                   type="email"
                   autoComplete="username"
+                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={coordinatorForm.formState.errors.email?.message}
                   {...coordinatorForm.register('email')}
                 />
@@ -402,6 +423,7 @@ export function LoginPage() {
                   label="Password"
                   type="password"
                   autoComplete="current-password"
+                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={coordinatorForm.formState.errors.password?.message}
                   {...coordinatorForm.register('password')}
                 />
@@ -411,7 +433,7 @@ export function LoginPage() {
                   fullWidth
                   size="lg"
                   disabled={coordinatorForm.formState.isSubmitting || !isSupabaseConfigured}
-                  className="mt-2"
+                  className="mt-2 shadow-lg shadow-violet-500/25"
                 >
                   {coordinatorForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
@@ -422,6 +444,7 @@ export function LoginPage() {
                   label="Email"
                   type="email"
                   autoComplete="username"
+                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={supervisorForm.formState.errors.identifier?.message}
                   {...supervisorForm.register('identifier')}
                 />
@@ -430,6 +453,7 @@ export function LoginPage() {
                   label="Password"
                   type="password"
                   autoComplete="current-password"
+                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={supervisorForm.formState.errors.password?.message}
                   {...supervisorForm.register('password')}
                 />
@@ -439,17 +463,19 @@ export function LoginPage() {
                   fullWidth
                   size="lg"
                   disabled={supervisorForm.formState.isSubmitting || !isSupabaseConfigured}
-                  className="mt-2"
+                  className="mt-2 shadow-lg shadow-violet-500/25"
                 >
                   {supervisorForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>
             )}
-          </Card>
+          </div>
         </div>
       </main>
 
-      <TeamOgFooter />
+      <div className="relative z-10">
+        <TeamOgFooter />
+      </div>
     </div>
   )
 }

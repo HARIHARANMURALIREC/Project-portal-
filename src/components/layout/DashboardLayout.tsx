@@ -7,6 +7,8 @@ import {
   CalendarCheck,
   FileText,
   Upload,
+  Globe2,
+  Newspaper,
   User,
   LogOut,
   Menu,
@@ -37,6 +39,8 @@ const navItems: { key: StudentNavKey; label: string; to: string; icon: typeof La
   { key: 'reviews', label: 'Reviews', to: '/student/reviews', icon: CalendarCheck },
   { key: 'details', label: 'Daily Interactions', to: '/student/details', icon: FileText },
   { key: 'uploads', label: 'Uploads', to: '/student/uploads', icon: Upload },
+  { key: 'sdg', label: 'SDG Page', to: '/student/sdg', icon: Globe2 },
+  { key: 'publications', label: 'Publications', to: '/student/publications', icon: Newspaper },
   { key: 'profile', label: 'Profile', to: '/student/profile', icon: User },
 ]
 

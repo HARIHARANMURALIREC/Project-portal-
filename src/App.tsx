@@ -11,12 +11,16 @@ import { CoordinatorUploads } from '@/pages/coordinator/CoordinatorUploads'
 import { CoordinatorMarks } from '@/pages/coordinator/CoordinatorMarks'
 import { CoordinatorProfile } from '@/pages/coordinator/CoordinatorProfile'
 import { CoordinatorTemplates } from '@/pages/coordinator/CoordinatorTemplates'
+import { CoordinatorSdg } from '@/pages/coordinator/CoordinatorSdg'
+import { CoordinatorPublications } from '@/pages/coordinator/CoordinatorPublications'
 import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
 import { TeacherBatchDashboard } from '@/pages/teacher/TeacherBatchDashboard'
 import { TeacherReviews } from '@/pages/teacher/TeacherReviews'
 import { TeacherReviewer } from '@/pages/teacher/TeacherReviewer'
 import { TeacherProfile } from '@/pages/teacher/TeacherProfile'
 import { TeacherTemplates } from '@/pages/teacher/TeacherTemplates'
+import { TeacherSdg } from '@/pages/teacher/TeacherSdg'
+import { TeacherPublications } from '@/pages/teacher/TeacherPublications'
 import { StudentDashboard } from '@/pages/student/StudentDashboard'
 import { AvailableTopics } from '@/pages/student/AvailableTopics'
 import { MyProject } from '@/pages/student/MyProject'
@@ -24,6 +28,8 @@ import { StudentReviews } from '@/pages/student/StudentReviews'
 import { StudentDetails } from '@/pages/student/StudentDetails'
 import { StudentProfile } from '@/pages/student/StudentProfile'
 import { StudentUploads } from '@/pages/student/StudentUploads'
+import { StudentSdg } from '@/pages/student/StudentSdg'
+import { StudentPublications } from '@/pages/student/StudentPublications'
 import { useTheme } from '@/context/ThemeContext'
 
 const queryClient = new QueryClient({
@@ -111,6 +117,22 @@ export default function App() {
             }
           />
           <Route
+            path="/coordinator/sdg"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <CoordinatorSdg />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coordinator/publications"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <CoordinatorPublications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/teacher"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
@@ -155,6 +177,22 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <TeacherTemplates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/sdg"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherSdg />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/publications"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherPublications />
               </ProtectedRoute>
             }
           />
@@ -211,6 +249,22 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentUploads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/sdg"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentSdg />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/publications"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentPublications />
               </ProtectedRoute>
             }
           />

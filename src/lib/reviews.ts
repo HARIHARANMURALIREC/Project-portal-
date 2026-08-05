@@ -3,13 +3,16 @@ import type { ReviewScheduleSummary, TeamReview } from '@/types/database'
 
 export const REVIEW_TITLE_OPTIONS = [
   'Zeroth Review',
-  'Review 1',
-  'Review 2',
-  'Review 3',
+  'First Review',
+  'Second Review',
+  'Third Review',
   'Internal Review',
   'External Review',
   'Final Review',
 ] as const
+
+/** Standard milestone reviews shown in filters (Zeroth–Third). */
+export const STANDARD_REVIEW_TITLES = REVIEW_TITLE_OPTIONS.slice(0, 4)
 
 export function formatReviewDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {

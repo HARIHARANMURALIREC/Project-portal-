@@ -5,6 +5,8 @@ import {
   FileStack,
   ClipboardList,
   Upload,
+  Globe2,
+  Newspaper,
   User,
   LogOut,
   Menu,
@@ -19,7 +21,14 @@ import { TeamOgFooter } from '@/components/TeamOgFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed'
 
-export type CoordinatorNavKey = 'overview' | 'uploads' | 'marks' | 'templates' | 'profile'
+export type CoordinatorNavKey =
+  | 'overview'
+  | 'uploads'
+  | 'marks'
+  | 'templates'
+  | 'sdg'
+  | 'publications'
+  | 'profile'
 
 interface CoordinatorDashboardLayoutProps {
   title: string
@@ -42,6 +51,8 @@ const navItems: {
   { key: 'uploads', label: 'Uploads', to: '/coordinator/uploads', icon: FileStack },
   { key: 'marks', label: 'Marks', to: '/coordinator/marks', icon: ClipboardList },
   { key: 'templates', label: 'Templates', to: '/coordinator/templates', icon: Upload },
+  { key: 'sdg', label: 'SDG Page', to: '/coordinator/sdg', icon: Globe2 },
+  { key: 'publications', label: 'Publications', to: '/coordinator/publications', icon: Newspaper },
   { key: 'profile', label: 'Profile', to: '/coordinator/profile', icon: User },
 ]
 

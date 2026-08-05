@@ -20,12 +20,25 @@ export interface TemplateConfig {
   badge: string
 }
 
+/** All template uploads accept PowerPoint and Word. */
+export const TEMPLATE_ACCEPT_PPT_WORD =
+  [
+    '.ppt',
+    '.pptx',
+    '.doc',
+    '.docx',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ].join(',')
+
 export const TEMPLATE_CONFIGS: TemplateConfig[] = [
   {
     type: 'literature_survey',
     label: 'Literature Survey',
     description: 'Document all related works, research gaps, and comparative analysis.',
-    accept: '.doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    accept: TEMPLATE_ACCEPT_PPT_WORD,
     iconBg: 'bg-rose-50 dark:bg-rose-950/40',
     iconColor: 'text-rose-600 dark:text-rose-400',
     borderColor: 'border-rose-100 dark:border-rose-800/50',
@@ -36,7 +49,7 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
     type: 'first_review_ppt',
     label: 'First Review PPT',
     description: 'Presentation for the first review — problem statement, objectives, methodology, outcomes.',
-    accept: '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    accept: TEMPLATE_ACCEPT_PPT_WORD,
     iconBg: 'bg-orange-50 dark:bg-orange-950/40',
     iconColor: 'text-orange-600 dark:text-orange-400',
     borderColor: 'border-orange-100 dark:border-orange-800/50',
@@ -47,7 +60,7 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
     type: 'review_report',
     label: 'Review Report',
     description: 'Formal report with abstract, introduction, design, implementation, results, and conclusion.',
-    accept: '.doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    accept: TEMPLATE_ACCEPT_PPT_WORD,
     iconBg: 'bg-violet-50 dark:bg-violet-950/40',
     iconColor: 'text-violet-600 dark:text-violet-400',
     borderColor: 'border-violet-100 dark:border-violet-800/50',
@@ -58,7 +71,7 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
     type: 'journal_papers',
     label: 'Journal Papers',
     description: 'IEEE / Scopus / SCI papers relevant to your project domain.',
-    accept: '.pdf,.doc,.docx',
+    accept: TEMPLATE_ACCEPT_PPT_WORD,
     iconBg: 'bg-sky-50 dark:bg-sky-950/40',
     iconColor: 'text-sky-600 dark:text-sky-400',
     borderColor: 'border-sky-100 dark:border-sky-800/50',
@@ -233,4 +246,71 @@ export async function getTemplateFileUrl(storagePath: string): Promise<string> {
     .createSignedUrl(storagePath, 60 * 10)
   if (error || !data?.signedUrl) throw error ?? new Error('Failed to create download link')
   return data.signedUrl
+}
+
+export async function downloadTemplateFileBlob(storagePath: string): Promise<Blob> {
+  const { data, error } = await supabase.storage
+    .from(TEMPLATE_SUBMISSIONS_BUCKET)
+    .download(storagePath)
+  if (error || !data) throw error ?? new Error('Failed to download file')
+  return data
+}
+
+export type ZipTemplateFileEntry = {
+  storage_path: string
+  original_filename: string
+  batchCode: string
+  documentLabel: string
+}
+
+function sanitizeZipSegment(value: string): string {
+  return value.replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim() || 'untitled'
+}
+
+/** Pack First Review template uploads into a ZIP (TeamID / DocumentType / filename). */
+export async function buildTemplateFilesZip(
+  entries: ZipTemplateFileEntry[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<Blob> {
+  if (entries.length === 0) throw new Error('No uploaded files to download')
+
+  const JSZip = (await import('jszip')).default
+  const zip = new JSZip()
+  const used = new Set<string>()
+  const failures: string[] = []
+
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i]
+    try {
+      const blob = await downloadTemplateFileBlob(entry.storage_path)
+      const folder = `${sanitizeZipSegment(entry.batchCode)}/${sanitizeZipSegment(entry.documentLabel)}`
+      const safeName = sanitizeZipSegment(entry.original_filename)
+      let path = `${folder}/${safeName}`
+      if (used.has(path.toLowerCase())) {
+        const dot = safeName.lastIndexOf('.')
+        const base = dot > 0 ? safeName.slice(0, dot) : safeName
+        const ext = dot > 0 ? safeName.slice(dot) : ''
+        let n = 2
+        while (used.has(path.toLowerCase())) {
+          path = `${folder}/${base}_${n}${ext}`
+          n += 1
+        }
+      }
+      used.add(path.toLowerCase())
+      zip.file(path, blob)
+    } catch {
+      failures.push(`${entry.batchCode}/${entry.documentLabel}/${entry.original_filename}`)
+    }
+    onProgress?.(i + 1, entries.length)
+  }
+
+  if (used.size === 0) {
+    throw new Error(
+      failures.length > 0
+        ? `Could not download any files (${failures.length} failed)`
+        : 'No uploaded files to download',
+    )
+  }
+
+  return zip.generateAsync({ type: 'blob' })
 }

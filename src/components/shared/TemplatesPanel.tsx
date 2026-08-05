@@ -20,7 +20,7 @@ const TEMPLATES: TemplateItem[] = [
     title: 'Literature Survey Format',
     description:
       'Standard template for documenting the literature survey. Used to present related works, research gaps, and comparative analysis.',
-    fileLabel: 'DOCX Template',
+    fileLabel: 'PPT / Word',
     badge: 'Required',
     badgeColor:
       'bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-800',
@@ -35,7 +35,7 @@ const TEMPLATES: TemplateItem[] = [
     title: 'Project First Review PPT Template',
     description:
       'PowerPoint template for the first project review presentation. Covers problem statement, objectives, methodology, and expected outcomes.',
-    fileLabel: 'PPTX Template',
+    fileLabel: 'PPT / Word',
     badge: 'Required',
     badgeColor:
       'bg-orange-50 text-orange-700 ring-orange-100 dark:bg-orange-950/60 dark:text-orange-300 dark:ring-orange-800',
@@ -50,7 +50,7 @@ const TEMPLATES: TemplateItem[] = [
     title: 'Review Report Format',
     description:
       'Official format for submitting the review report. Covers abstract, introduction, system design, implementation, results, and conclusion.',
-    fileLabel: 'DOCX Template',
+    fileLabel: 'PPT / Word',
     badge: 'Required',
     badgeColor:
       'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/60 dark:text-violet-300 dark:ring-violet-800',
@@ -65,7 +65,7 @@ const TEMPLATES: TemplateItem[] = [
     title: 'Selecting Journal Papers',
     description:
       'Guidelines for selecting relevant IEEE / Scopus / SCI journal papers. Includes tips on identifying credible sources and citation norms.',
-    fileLabel: 'PDF Guide',
+    fileLabel: 'PPT / Word',
     badge: 'Reference',
     badgeColor:
       'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/60 dark:text-sky-300 dark:ring-sky-800',

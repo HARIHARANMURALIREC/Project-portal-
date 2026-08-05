@@ -1,1 +1,9 @@
-export type TeacherNavKey = 'dashboard' | 'batch' | 'reviews' | 'reviewer' | 'templates' | 'profile'
+export type TeacherNavKey =
+  | 'dashboard'
+  | 'batch'
+  | 'reviews'
+  | 'reviewer'
+  | 'templates'
+  | 'sdg'
+  | 'publications'
+  | 'profile'

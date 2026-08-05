@@ -5,6 +5,8 @@ import {
   CalendarCheck,
   ClipboardCheck,
   Upload,
+  Globe2,
+  Newspaper,
   User,
   LogOut,
   Menu,
@@ -50,6 +52,8 @@ function buildNavItems(batchId?: string | null) {
     { key: 'reviews', label: 'Reviews', to: '/teacher/reviews', icon: CalendarCheck },
     { key: 'reviewer', label: 'Reviewer', to: '/teacher/reviewer', icon: ClipboardCheck },
     { key: 'templates', label: 'Templates', to: '/teacher/templates', icon: Upload },
+    { key: 'sdg', label: 'SDG Page', to: '/teacher/sdg', icon: Globe2 },
+    { key: 'publications', label: 'Publications', to: '/teacher/publications', icon: Newspaper },
     { key: 'profile', label: 'Profile', to: '/teacher/profile', icon: User },
   )
   return items

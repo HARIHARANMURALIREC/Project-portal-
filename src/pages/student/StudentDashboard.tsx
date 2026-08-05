@@ -21,7 +21,7 @@ import { getProjects } from '@/lib/studentApi'
 import { POLL_INTERVALS } from '@/lib/queryConfig'
 import { getStudentAcademicInfo, getTeamMembersForDisplay, truncateText } from '@/lib/mappers'
 import { canSelectProject, getProjectStatusLabel, getWelcomeMessage, isSelectionBlocked, isSupervisorAssignedProject } from '@/lib/studentRules'
-import { fetchCoordinatorRemarksForTeam, formatReviewDateTime } from '@/lib/reviews'
+import { fetchCoordinatorRemarksForTeam, formatReviewDateTime, formatReviewSchedule } from '@/lib/reviews'
 import { fetchSupervisorInstructionsForTeam, formatSupervisorInstructionDateTime } from '@/lib/supervisorNotes'
 import type { StudentContext } from '@/types/student'
 
@@ -76,9 +76,15 @@ function StudentDashboardContent({ context }: { context: StudentContext }) {
           <div className="space-y-3">
             {coordinatorRemarks.map((remark) => (
               <div key={remark.id} className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-app-surface p-3">
-                <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                   <p className="font-semibold text-slate-900 dark:text-slate-100">{remark.review_title}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{formatReviewDateTime(remark.scheduled_at)}</p>
+                  <div className="text-right text-xs text-slate-500 dark:text-slate-400">
+                    <p>Review: {formatReviewSchedule(remark.scheduled_at, remark.scheduled_end_at)}</p>
+                    <p>
+                      Announced:{' '}
+                      {formatReviewDateTime(remark.announced_at ?? remark.created_at)}
+                    </p>
+                  </div>
                 </div>
                 <p className="text-sm text-slate-700 dark:text-slate-300">{remark.remarks}</p>
               </div>

@@ -21,6 +21,16 @@ export function formatReviewDateTime(iso: string): string {
   })
 }
 
+/** Formats a review window: single date, or Date 1 – Date 2 when end is set. */
+export function formatReviewSchedule(
+  scheduledAt: string,
+  scheduledEndAt?: string | null,
+): string {
+  const start = formatReviewDateTime(scheduledAt)
+  if (!scheduledEndAt) return start
+  return `${start} – ${formatReviewDateTime(scheduledEndAt)}`
+}
+
 export function isReviewCompleted(review: Pick<TeamReview, 'completed_at'>): boolean {
   return review.completed_at != null
 }
@@ -83,12 +93,16 @@ export async function fetchCoordinatorReviewSchedules(): Promise<ReviewScheduleS
 export async function scheduleReviewForAllTeams(input: {
   reviewTitle: string
   scheduledAt: string
+  scheduledEndAt: string
   remarks?: string
 }): Promise<{ schedule_group_id: string; teams_scheduled: number }> {
   const { data, error } = await supabase.rpc('coordinator_schedule_review_for_all', {
     p_review_title: input.reviewTitle.trim(),
     p_scheduled_at: new Date(input.scheduledAt).toISOString(),
     p_remarks: input.remarks?.trim() || null,
+    p_scheduled_end_at: new Date(input.scheduledEndAt).toISOString(),
+    // Automatically set to the moment the review is allotted
+    p_announced_at: new Date().toISOString(),
   })
   if (error) throw error
   const row = Array.isArray(data) ? data[0] : data
@@ -99,12 +113,16 @@ export async function scheduleReviewForAllTeams(input: {
 export async function rescheduleReviewForAllTeams(input: {
   scheduleGroupId: string
   scheduledAt: string
+  scheduledEndAt: string
   remarks?: string
 }): Promise<number> {
   const { data, error } = await supabase.rpc('coordinator_reschedule_review', {
     p_schedule_group_id: input.scheduleGroupId,
     p_scheduled_at: new Date(input.scheduledAt).toISOString(),
     p_remarks: input.remarks?.trim() || null,
+    p_scheduled_end_at: new Date(input.scheduledEndAt).toISOString(),
+    // Keep original announcement date when only review dates/notes change
+    p_announced_at: null,
   })
   if (error) throw error
   return (data as number) ?? 0

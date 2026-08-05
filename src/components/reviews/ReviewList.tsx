@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock } from 'lucide-react'
-import { formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
+import { formatReviewDateTime, formatReviewSchedule, isReviewCompleted } from '@/lib/reviews'
 import type { TeamReview } from '@/types/database'
 
 export function ReviewStatusBadge({ review }: { review: TeamReview }) {
@@ -40,12 +40,22 @@ export function ReviewList({ reviews, emptyMessage = 'No reviews scheduled yet.'
               <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {isReviewCompleted(review) ? 'Completed' : 'Pending'}:{' '}
-                {formatReviewDateTime(isReviewCompleted(review) ? review.completed_at! : review.scheduled_at)}
+                {isReviewCompleted(review)
+                  ? formatReviewDateTime(review.completed_at!)
+                  : formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
               </p>
               {!isReviewCompleted(review) && (
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  Review on: {formatReviewDateTime(review.scheduled_at)}
-                </p>
+                <>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
+                  </p>
+                  {(review.announced_at || review.created_at) && (
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      Announcement date:{' '}
+                      {formatReviewDateTime(review.announced_at ?? review.created_at)}
+                    </p>
+                  )}
+                </>
               )}
               {review.remarks && (
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">

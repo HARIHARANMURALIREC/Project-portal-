@@ -14,7 +14,7 @@ import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useTeacherTeams } from '@/hooks/useTeacherTeams'
-import { fetchCoordinatorRemarksForTeam, formatReviewDateTime } from '@/lib/reviews'
+import { fetchCoordinatorRemarksForTeam, formatReviewDateTime, formatReviewSchedule } from '@/lib/reviews'
 import { fetchSupervisorInstructionsForTeam, formatSupervisorInstructionDateTime, deleteSupervisorInstruction } from '@/lib/supervisorNotes'
 import { SupervisorInstructionScheduler } from '@/components/teacher/SupervisorInstructionScheduler'
 import { StudentAttendancePanel } from '@/components/teacher/StudentAttendance'
@@ -108,9 +108,23 @@ function TeacherDashboardContent() {
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Coordinator Notes</h3>
           </div>
           <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-app-surface p-4">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
               <p className="font-semibold text-slate-900 dark:text-slate-100">{allCoordinatorRemarks[0].review_title}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{formatReviewDateTime(allCoordinatorRemarks[0].scheduled_at)}</p>
+              <div className="text-right text-xs text-slate-500 dark:text-slate-400">
+                <p>
+                  Review:{' '}
+                  {formatReviewSchedule(
+                    allCoordinatorRemarks[0].scheduled_at,
+                    allCoordinatorRemarks[0].scheduled_end_at,
+                  )}
+                </p>
+                <p>
+                  Announced:{' '}
+                  {formatReviewDateTime(
+                    allCoordinatorRemarks[0].announced_at ?? allCoordinatorRemarks[0].created_at,
+                  )}
+                </p>
+              </div>
             </div>
             <p className="text-sm text-slate-700 dark:text-slate-300">{allCoordinatorRemarks[0].remarks}</p>
           </div>

@@ -289,7 +289,7 @@ export function ReviewUploadPlaceholder({
         </p>
         <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-amber-900 dark:text-amber-200">
           <li>Ask your project coordinator to log in and open the Coordinator Dashboard.</li>
-          <li>Under <span className="font-medium">Schedule Common Review</span>, pick a review (e.g. Zeroth Review) and set date &amp; time.</li>
+          <li>Under <span className="font-medium">Schedule Common Review</span>, pick a review (e.g. First Review), set review dates and notes. Announcement date is set automatically.</li>
           <li>Click <span className="font-medium">Schedule for all teams</span>, then refresh this page.</li>
         </ol>
       </div>

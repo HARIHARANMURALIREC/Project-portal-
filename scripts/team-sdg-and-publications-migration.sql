@@ -1,5 +1,5 @@
 -- Team SDG submissions and publication status tracking
--- Run in Supabase SQL Editor if needed
+-- Safe to re-run (idempotent)
 
 create table if not exists public.team_sdg_entries (
   id uuid primary key default gen_random_uuid(),
@@ -15,15 +15,19 @@ create index if not exists team_sdg_entries_team_id_idx on public.team_sdg_entri
 
 alter table public.team_sdg_entries enable row level security;
 
+drop policy if exists "Auth read team sdg entries" on public.team_sdg_entries;
 create policy "Auth read team sdg entries"
   on public.team_sdg_entries for select to authenticated using (true);
 
+drop policy if exists "Auth insert team sdg entries" on public.team_sdg_entries;
 create policy "Auth insert team sdg entries"
   on public.team_sdg_entries for insert to authenticated with check (true);
 
+drop policy if exists "Auth update team sdg entries" on public.team_sdg_entries;
 create policy "Auth update team sdg entries"
   on public.team_sdg_entries for update to authenticated using (true) with check (true);
 
+drop policy if exists "Auth delete team sdg entries" on public.team_sdg_entries;
 create policy "Auth delete team sdg entries"
   on public.team_sdg_entries for delete to authenticated using (true);
 
@@ -44,14 +48,18 @@ create index if not exists team_publication_entries_team_id_idx on public.team_p
 
 alter table public.team_publication_entries enable row level security;
 
+drop policy if exists "Auth read team publication entries" on public.team_publication_entries;
 create policy "Auth read team publication entries"
   on public.team_publication_entries for select to authenticated using (true);
 
+drop policy if exists "Auth insert team publication entries" on public.team_publication_entries;
 create policy "Auth insert team publication entries"
   on public.team_publication_entries for insert to authenticated with check (true);
 
+drop policy if exists "Auth update team publication entries" on public.team_publication_entries;
 create policy "Auth update team publication entries"
   on public.team_publication_entries for update to authenticated using (true) with check (true);
 
+drop policy if exists "Auth delete team publication entries" on public.team_publication_entries;
 create policy "Auth delete team publication entries"
   on public.team_publication_entries for delete to authenticated using (true);

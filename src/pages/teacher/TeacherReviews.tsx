@@ -17,6 +17,7 @@ import { sortTeamMembers } from '@/lib/teamSort'
 import {
   completeTeamReview,
   formatReviewDateTime,
+  formatReviewSchedule,
   isReviewCompleted,
   reopenTeamReview,
 } from '@/lib/reviews'
@@ -113,8 +114,14 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
                     <div>
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                        Scheduled: {formatReviewDateTime(review.scheduled_at)}
+                        Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
                       </p>
+                      {(review.announced_at || review.created_at) && (
+                        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+                          Announcement date:{' '}
+                          {formatReviewDateTime(review.announced_at ?? review.created_at)}
+                        </p>
+                      )}
                       {isReviewCompleted(review) && review.completed_at && (
                         <p className="mt-0.5 text-sm text-emerald-700 dark:text-emerald-300">
                           Completed: {formatReviewDateTime(review.completed_at)}

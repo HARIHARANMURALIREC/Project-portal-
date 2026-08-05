@@ -12,6 +12,7 @@ import {
   fetchCoordinatorReviewSchedules,
   fetchScheduleTeamStatus,
   formatReviewDateTime,
+  formatReviewSchedule,
   rescheduleReviewForAllTeams,
   scheduleReviewForAllTeams,
   toDatetimeLocalValue,
@@ -175,9 +176,11 @@ export function CoordinatorReviewScheduler() {
   const [reviewTitle, setReviewTitle] = useState<string>(REVIEW_TITLE_OPTIONS[0])
   const [customTitle, setCustomTitle] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
+  const [scheduledEndAt, setScheduledEndAt] = useState('')
   const [remarks, setRemarks] = useState('')
   const [editing, setEditing] = useState<ReviewScheduleSummary | null>(null)
   const [editScheduledAt, setEditScheduledAt] = useState('')
+  const [editScheduledEndAt, setEditScheduledEndAt] = useState('')
   const [editRemarks, setEditRemarks] = useState('')
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
 
@@ -197,16 +200,22 @@ export function CoordinatorReviewScheduler() {
     mutationFn: async () => {
       const title = reviewTitle === 'Other' ? customTitle.trim() : reviewTitle
       if (!title) throw new Error('Enter a review name')
-      if (!scheduledAt) throw new Error('Select date and time')
+      if (!scheduledAt) throw new Error('Select review date (start)')
+      if (!scheduledEndAt) throw new Error('Select review date (end)')
+      if (new Date(scheduledEndAt) < new Date(scheduledAt)) {
+        throw new Error('Review end date must be on or after start date')
+      }
       return scheduleReviewForAllTeams({
         reviewTitle: title,
         scheduledAt,
+        scheduledEndAt,
         remarks,
       })
     },
     onSuccess: (result) => {
       toast.success(`Review scheduled for all ${result.teams_scheduled} teams`)
       setScheduledAt('')
+      setScheduledEndAt('')
       setRemarks('')
       setCustomTitle('')
       invalidate()
@@ -219,10 +228,15 @@ export function CoordinatorReviewScheduler() {
   const rescheduleMutation = useMutation({
     mutationFn: async () => {
       if (!editing) throw new Error('No schedule selected')
-      if (!editScheduledAt) throw new Error('Select date and time')
+      if (!editScheduledAt) throw new Error('Select review date (start)')
+      if (!editScheduledEndAt) throw new Error('Select review date (end)')
+      if (new Date(editScheduledEndAt) < new Date(editScheduledAt)) {
+        throw new Error('Review end date must be on or after start date')
+      }
       return rescheduleReviewForAllTeams({
         scheduleGroupId: editing.schedule_group_id,
         scheduledAt: editScheduledAt,
+        scheduledEndAt: editScheduledEndAt,
         remarks: editRemarks,
       })
     },
@@ -251,6 +265,11 @@ export function CoordinatorReviewScheduler() {
   const startEdit = (schedule: ReviewScheduleSummary) => {
     setEditing(schedule)
     setEditScheduledAt(toDatetimeLocalValue(schedule.scheduled_at))
+    setEditScheduledEndAt(
+      schedule.scheduled_end_at
+        ? toDatetimeLocalValue(schedule.scheduled_end_at)
+        : toDatetimeLocalValue(schedule.scheduled_at),
+    )
     setEditRemarks(schedule.remarks ?? '')
   }
 
@@ -264,7 +283,7 @@ export function CoordinatorReviewScheduler() {
               Schedule Common Review
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Date and time apply to every class and team. Supervisors are shown below and mark completion for their teams.
+              Set the review name, review dates, and notes. Announcement date is set automatically to today when you schedule.
             </p>
           </div>
         </div>
@@ -294,17 +313,25 @@ export function CoordinatorReviewScheduler() {
             />
           )}
           <Input
-            label="Date & time (common for all teams)"
+            label="Review date (start)"
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
           />
           <Input
-            label="Notes (optional)"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            placeholder="Venue, documents to bring, etc."
+            label="Review date (end)"
+            type="datetime-local"
+            value={scheduledEndAt}
+            onChange={(e) => setScheduledEndAt(e.target.value)}
           />
+          <div className="sm:col-span-2">
+            <Input
+              label="Notes"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Venue, documents to bring, etc."
+            />
+          </div>
         </div>
         <Button
           className="mt-4"
@@ -342,16 +369,24 @@ export function CoordinatorReviewScheduler() {
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{schedule.review_title}</p>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Input
-                          label="New date & time"
+                          label="Review date (start)"
                           type="datetime-local"
                           value={editScheduledAt}
                           onChange={(e) => setEditScheduledAt(e.target.value)}
                         />
                         <Input
-                          label="Notes"
-                          value={editRemarks}
-                          onChange={(e) => setEditRemarks(e.target.value)}
+                          label="Review date (end)"
+                          type="datetime-local"
+                          value={editScheduledEndAt}
+                          onChange={(e) => setEditScheduledEndAt(e.target.value)}
                         />
+                        <div className="sm:col-span-2">
+                          <Input
+                            label="Notes"
+                            value={editRemarks}
+                            onChange={(e) => setEditRemarks(e.target.value)}
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -387,7 +422,12 @@ export function CoordinatorReviewScheduler() {
                             )}
                           </div>
                           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                            {formatReviewDateTime(schedule.scheduled_at)}
+                            Review date:{' '}
+                            {formatReviewSchedule(schedule.scheduled_at, schedule.scheduled_end_at)}
+                          </p>
+                          <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+                            Announcement date:{' '}
+                            {formatReviewDateTime(schedule.announced_at ?? schedule.created_at)}
                           </p>
                           {schedule.remarks && (
                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

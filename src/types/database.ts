@@ -78,6 +78,8 @@ export interface TeamReview {
   team_id: string
   review_title: string
   scheduled_at: string
+  scheduled_end_at?: string | null
+  announced_at?: string | null
   completed_at: string | null
   completed_by: string | null
   remarks: string | null
@@ -93,6 +95,8 @@ export interface ReviewScheduleSummary {
   schedule_group_id: string
   review_title: string
   scheduled_at: string
+  scheduled_end_at: string | null
+  announced_at: string | null
   remarks: string | null
   teams_count: number
   completed_count: number

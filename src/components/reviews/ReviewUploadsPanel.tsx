@@ -19,7 +19,7 @@ import {
   triggerBlobDownload,
   type ZipReviewFileEntry,
 } from '@/lib/reviewFiles'
-import { formatReviewDateTime, STANDARD_REVIEW_TITLES } from '@/lib/reviews'
+import { formatReviewSchedule, STANDARD_REVIEW_TITLES } from '@/lib/reviews'
 import { teamBatchOptions, teamMatchesFilters, uniqueSorted } from '@/lib/teamFilters'
 import {
   TEMPLATE_CONFIGS,
@@ -460,7 +460,9 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
         'Team ID': team.batch_code,
         Supervisor: team.supervisor_name ?? '',
         Reviewer: team.reviewer_name ?? '',
-        'First Review': review ? formatReviewDateTime(review.scheduled_at) : 'Not scheduled',
+        'First Review': review
+          ? formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)
+          : 'Not scheduled',
         'Literature Survey': uploads.literature_survey?.original_filename ?? 'Missing',
         'First Review PPT': uploads.first_review_ppt?.original_filename ?? 'Missing',
         'Review Report': uploads.review_report?.original_filename ?? 'Missing',
@@ -492,7 +494,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
         Supervisor: team.supervisor_name ?? '',
         Reviewer: team.reviewer_name ?? '',
         Review: review.review_title,
-        Scheduled: formatReviewDateTime(review.scheduled_at),
+        Scheduled: formatReviewSchedule(review.scheduled_at, review.scheduled_end_at),
         PDF: pdf ? 'Yes' : 'No',
         ...(hidePptColumn
           ? {}
@@ -806,7 +808,9 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
                         )}
                         <td className="px-4 py-3">
                           <p className="font-medium text-slate-900 dark:text-slate-100">{review.review_title}</p>
-                          <p className="text-xs text-slate-500">{formatReviewDateTime(review.scheduled_at)}</p>
+                          <p className="text-xs text-slate-500">
+                            {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
+                          </p>
                         </td>
                         <td className="px-4 py-3">
                           {pdf ? (
@@ -918,7 +922,9 @@ function FirstReviewUploadsTable({
                     {review ? (
                       <>
                         <p className="font-medium text-slate-900 dark:text-slate-100">{review.review_title}</p>
-                        <p className="text-xs text-slate-500">{formatReviewDateTime(review.scheduled_at)}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
+                        </p>
                       </>
                     ) : (
                       <span className="text-xs font-medium text-slate-500">Not scheduled</span>

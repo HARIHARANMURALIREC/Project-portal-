@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
 import { TeamProjectTopic } from '@/components/teacher/TeamProjectTopic'
-import { fetchTeamReviews, formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
+import { fetchTeamReviews, formatReviewSchedule, isReviewCompleted } from '@/lib/reviews'
 import { fetchReviewFilesForTeam } from '@/lib/reviewFiles'
 import { isZerothReview } from '@/lib/reviewMarks'
 import type { TeamWithDetails } from '@/types/database'
@@ -97,7 +97,7 @@ export function BatchReviewSubmissions({ teams }: { teams: TeamWithDetails[] }) 
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {review.review_title}
                           <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
-                            {formatReviewDateTime(review.scheduled_at)}
+                            {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
                             {isReviewCompleted(review) ? ' · Completed' : ''}
                           </span>
                         </p>

@@ -6,7 +6,7 @@ import { ZerothReviewRubricsInfo } from '@/components/reviews/ZerothReviewRubric
 import { Card } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
-import { formatReviewDateTime, isReviewCompleted } from '@/lib/reviews'
+import { formatReviewDateTime, formatReviewSchedule, isReviewCompleted } from '@/lib/reviews'
 import type { StudentContext } from '@/types/student'
 
 function StudentReviewsContent({ context }: { context: StudentContext }) {
@@ -23,7 +23,7 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Project Reviews</h3>
         </div>
         <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-          The coordinator sets a common review date and time for all teams. Upload one PDF per review.
+          The coordinator sets common review dates for all teams. Upload one PDF per review.
           Filename must include team ID, review name, and date (example:{' '}
           <span className="font-mono text-xs">{context.team.batch_code}_ZerothReview_.pdf</span>).
           For Zeroth Review you can see the rubrics below; your marks are not shown.
@@ -59,8 +59,14 @@ function StudentReviewsContent({ context }: { context: StudentContext }) {
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      Scheduled: {formatReviewDateTime(review.scheduled_at)}
+                      Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
                     </p>
+                    {(review.announced_at || review.created_at) && (
+                      <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+                        Announcement date:{' '}
+                        {formatReviewDateTime(review.announced_at ?? review.created_at)}
+                      </p>
+                    )}
                     {isReviewCompleted(review) && review.completed_at && (
                       <p className="mt-0.5 text-sm text-emerald-700 dark:text-emerald-300">
                         Completed: {formatReviewDateTime(review.completed_at)}

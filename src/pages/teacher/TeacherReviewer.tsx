@@ -14,7 +14,7 @@ import { useReviewerTeams } from '@/hooks/useReviewerTeams'
 import { useTeamReviews } from '@/hooks/useTeamReviews'
 import { useAuth } from '@/hooks/useAuth'
 import { sortTeamMembers } from '@/lib/teamSort'
-import { formatReviewDateTime, isReviewCompleted, toDatetimeLocalValue } from '@/lib/reviews'
+import { formatReviewDateTime, formatReviewSchedule, isReviewCompleted, toDatetimeLocalValue } from '@/lib/reviews'
 import { isZerothReview } from '@/lib/reviewMarks'
 import { supabase } from '@/lib/supabase'
 import { StudentAttendancePanel } from '@/components/teacher/StudentAttendance'
@@ -115,11 +115,17 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                        Scheduled: {formatReviewDateTime(review.scheduled_at)}
+                        Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
                         {isReviewCompleted(review) && review.completed_at
                           ? ` · Completed ${formatReviewDateTime(review.completed_at)}`
                           : ''}
                       </p>
+                      {(review.announced_at || review.created_at) && (
+                        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+                          Announcement date:{' '}
+                          {formatReviewDateTime(review.announced_at ?? review.created_at)}
+                        </p>
+                      )}
                       {review.remarks && (
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Notes: {review.remarks}</p>
                       )}

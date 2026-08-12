@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabase'
-import type { StudentReviewMarks, TeamReview, TeamReviewFile, TeamWithDetails } from '@/types/database'
+import type {
+  StudentProgressiveReviewMarks,
+  StudentReviewMarks,
+  TeamReview,
+  TeamReviewFile,
+  TeamWithDetails,
+} from '@/types/database'
 import { withSortedTeams } from '@/lib/teamSort'
 import { ZEROTH_REVIEW_TITLE } from '@/lib/reviewMarks'
 
@@ -33,6 +39,12 @@ export async function fetchAllStudentReviewMarks(): Promise<StudentReviewMarks[]
   const { data, error } = await supabase.from('student_review_marks').select('*')
   if (error) throw error
   return (data ?? []) as StudentReviewMarks[]
+}
+
+export async function fetchAllProgressiveReviewMarks(): Promise<StudentProgressiveReviewMarks[]> {
+  const { data, error } = await supabase.from('student_progressive_review_marks').select('*')
+  if (error) throw error
+  return (data ?? []) as StudentProgressiveReviewMarks[]
 }
 
 export async function fetchZerothReviews(): Promise<TeamReview[]> {

@@ -8,63 +8,116 @@ import { Input, Select } from '@/components/ui/Input'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   fetchAllCoordinatorTeams,
+  fetchAllProgressiveReviewMarks,
   fetchAllStudentReviewMarks,
-  fetchZerothReviews,
+  fetchAllTeamReviews,
 } from '@/lib/coordinatorData'
-import { ZEROTH_REVIEW_TOTAL_MAX, marksKey, indexStudentMarks } from '@/lib/reviewMarks'
+import {
+  PROGRESSIVE_REVIEW_TOTAL_MAX,
+  REVIEW_SLOT_OPTIONS,
+  ZEROTH_REVIEW_TOTAL_MAX,
+  indexProgressiveMarks,
+  indexStudentMarks,
+  isProgressiveReviewSlot,
+  marksKey,
+  matchReviewSlot,
+  type ReviewSlot,
+} from '@/lib/reviewMarks'
 import { sortTeamMembers } from '@/lib/teamSort'
 import { teamBatchOptions, uniqueSorted } from '@/lib/teamFilters'
 
-type MarkRow = {
+type ZerothMarkRow = {
+  kind: 'zeroth'
   teamCode: string
   batchId: string
   supervisor: string
   reviewer: string
   studentName: string
   regNo: string
-  noveltyS: number | null
-  abstractS: number | null
-  sdgS: number | null
+  aS: number | null
+  bS: number | null
+  cS: number | null
   totalS: number | null
-  noveltyR: number | null
-  abstractR: number | null
-  sdgR: number | null
+  aR: number | null
+  bR: number | null
+  cR: number | null
   totalR: number | null
 }
 
+type ProgressiveMarkRow = {
+  kind: 'progressive'
+  teamCode: string
+  batchId: string
+  supervisor: string
+  reviewer: string
+  studentName: string
+  regNo: string
+  aS: number | null
+  bS: number | null
+  cS: number | null
+  dS: number | null
+  totalS: number | null
+  aR: number | null
+  bR: number | null
+  cR: number | null
+  dR: number | null
+  totalR: number | null
+}
+
+type MarkRow = ZerothMarkRow | ProgressiveMarkRow
+
 export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPrefix?: string } = {}) {
+  const [reviewSlot, setReviewSlot] = useState<ReviewSlot>('0th')
   const [batchFilter, setBatchFilter] = useState('')
   const [supervisorFilter, setSupervisorFilter] = useState('')
   const [reviewerFilter, setReviewerFilter] = useState('')
   const [markStatusFilter, setMarkStatusFilter] = useState('')
   const [search, setSearch] = useState('')
 
+  const progressive = isProgressiveReviewSlot(reviewSlot)
+
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['coordinator-teams'],
     queryFn: fetchAllCoordinatorTeams,
   })
-  const { data: zerothReviews = [], isLoading: reviewsLoading } = useQuery({
-    queryKey: ['coordinator-zeroth-reviews'],
-    queryFn: fetchZerothReviews,
+  const { data: allReviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ['coordinator-all-team-reviews'],
+    queryFn: fetchAllTeamReviews,
   })
-  const { data: marks = [], isLoading: marksLoading } = useQuery({
+  const { data: zerothMarks = [], isLoading: zerothMarksLoading } = useQuery({
     queryKey: ['coordinator-all-student-marks'],
     queryFn: fetchAllStudentReviewMarks,
+    enabled: !progressive,
+  })
+  const { data: progressiveMarks = [], isLoading: progressiveMarksLoading } = useQuery({
+    queryKey: ['coordinator-all-progressive-marks'],
+    queryFn: fetchAllProgressiveReviewMarks,
+    enabled: progressive,
   })
 
-  const isLoading = teamsLoading || reviewsLoading || marksLoading
+  const isLoading =
+    teamsLoading ||
+    reviewsLoading ||
+    (progressive ? progressiveMarksLoading : zerothMarksLoading)
 
   const batches = useMemo(() => teamBatchOptions(teams), [teams])
   const supervisors = useMemo(() => uniqueSorted(teams.map((t) => t.supervisor_name)), [teams])
   const reviewers = useMemo(() => uniqueSorted(teams.map((t) => t.reviewer_name)), [teams])
 
   const reviewByTeam = useMemo(() => {
-    const map = new Map<string, (typeof zerothReviews)[0]>()
-    for (const r of zerothReviews) map.set(r.team_id, r)
+    const map = new Map<string, (typeof allReviews)[0]>()
+    for (const r of allReviews) {
+      if (!matchReviewSlot(r.review_title, reviewSlot)) continue
+      const existing = map.get(r.team_id)
+      if (!existing || new Date(r.scheduled_at).getTime() >= new Date(existing.scheduled_at).getTime()) {
+        map.set(r.team_id, r)
+      }
+    }
     return map
-  }, [zerothReviews])
+  }, [allReviews, reviewSlot])
 
-  const marksIndex = useMemo(() => indexStudentMarks(marks), [marks])
+  const zerothIndex = useMemo(() => indexStudentMarks(zerothMarks), [zerothMarks])
+  const progressiveIndex = useMemo(() => indexProgressiveMarks(progressiveMarks), [progressiveMarks])
 
   const rows = useMemo(() => {
     const out: MarkRow[] = []
@@ -73,28 +126,53 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
       const review = reviewByTeam.get(team.id)
       const members = sortTeamMembers(team.team_members ?? [])
       for (const member of members) {
-        const sup = review ? marksIndex[marksKey(member.id, 'supervisor')] : undefined
-        const rev = review ? marksIndex[marksKey(member.id, 'reviewer')] : undefined
-        out.push({
-          teamCode: team.batch_code,
-          batchId: team.batch_id,
-          supervisor: team.supervisor_name ?? '—',
-          reviewer: team.reviewer_name ?? '—',
-          studentName: member.name,
-          regNo: member.reg_no,
-          noveltyS: sup ? Number(sup.novelty_idea) : null,
-          abstractS: sup ? Number(sup.abstract_content) : null,
-          sdgS: sup ? Number(sup.sdg_goal_mapping) : null,
-          totalS: sup ? Number(sup.total) : null,
-          noveltyR: rev ? Number(rev.novelty_idea) : null,
-          abstractR: rev ? Number(rev.abstract_content) : null,
-          sdgR: rev ? Number(rev.sdg_goal_mapping) : null,
-          totalR: rev ? Number(rev.total) : null,
-        })
+        if (progressive) {
+          const sup = review ? progressiveIndex[marksKey(member.id, 'supervisor')] : undefined
+          const rev = review ? progressiveIndex[marksKey(member.id, 'reviewer')] : undefined
+          out.push({
+            kind: 'progressive',
+            teamCode: team.batch_code,
+            batchId: team.batch_id,
+            supervisor: team.supervisor_name ?? '—',
+            reviewer: team.reviewer_name ?? '—',
+            studentName: member.name,
+            regNo: member.reg_no,
+            aS: sup ? Number(sup.literature_survey) : null,
+            bS: sup ? Number(sup.first_review_ppt) : null,
+            cS: sup ? Number(sup.review_report) : null,
+            dS: sup ? Number(sup.journal_papers) : null,
+            totalS: sup ? Number(sup.total) : null,
+            aR: rev ? Number(rev.literature_survey) : null,
+            bR: rev ? Number(rev.first_review_ppt) : null,
+            cR: rev ? Number(rev.review_report) : null,
+            dR: rev ? Number(rev.journal_papers) : null,
+            totalR: rev ? Number(rev.total) : null,
+          })
+        } else {
+          const sup = review ? zerothIndex[marksKey(member.id, 'supervisor')] : undefined
+          const rev = review ? zerothIndex[marksKey(member.id, 'reviewer')] : undefined
+          out.push({
+            kind: 'zeroth',
+            teamCode: team.batch_code,
+            batchId: team.batch_id,
+            supervisor: team.supervisor_name ?? '—',
+            reviewer: team.reviewer_name ?? '—',
+            studentName: member.name,
+            regNo: member.reg_no,
+            aS: sup ? Number(sup.novelty_idea) : null,
+            bS: sup ? Number(sup.abstract_content) : null,
+            cS: sup ? Number(sup.sdg_goal_mapping) : null,
+            totalS: sup ? Number(sup.total) : null,
+            aR: rev ? Number(rev.novelty_idea) : null,
+            bR: rev ? Number(rev.abstract_content) : null,
+            cR: rev ? Number(rev.sdg_goal_mapping) : null,
+            totalR: rev ? Number(rev.total) : null,
+          })
+        }
       }
     }
     return out
-  }, [teams, reviewByTeam, marksIndex])
+  }, [teams, reviewByTeam, progressive, zerothIndex, progressiveIndex])
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -150,36 +228,84 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
     setSearch('')
   }
 
+  const slotLabel = REVIEW_SLOT_OPTIONS.find((o) => o.value === reviewSlot)?.label ?? reviewSlot
+  const maxTotal = progressive ? PROGRESSIVE_REVIEW_TOTAL_MAX : ZEROTH_REVIEW_TOTAL_MAX
+
   const exportExcel = () => {
-    const exportRows = filtered.map((r) => ({
-      'Team ID': r.teamCode,
-      Student: r.studentName,
-      'Reg No': r.regNo,
-      Supervisor: r.supervisor,
-      Reviewer: r.reviewer,
-      'Sup Novelty': r.noveltyS ?? '',
-      'Sup Abstract': r.abstractS ?? '',
-      'Sup SDG': r.sdgS ?? '',
-      'Sup Total': r.totalS ?? '',
-      'Rev Novelty': r.noveltyR ?? '',
-      'Rev Abstract': r.abstractR ?? '',
-      'Rev SDG': r.sdgR ?? '',
-      'Rev Total': r.totalR ?? '',
-    }))
+    const exportRows = filtered.map((r) => {
+      if (r.kind === 'progressive') {
+        return {
+          Review: slotLabel,
+          'Team ID': r.teamCode,
+          Student: r.studentName,
+          'Reg No': r.regNo,
+          Supervisor: r.supervisor,
+          Reviewer: r.reviewer,
+          'Sup Literature Survey': r.aS ?? '',
+          'Sup First Review PPT': r.bS ?? '',
+          'Sup Review Report': r.cS ?? '',
+          'Sup Journal Papers': r.dS ?? '',
+          'Sup Total': r.totalS ?? '',
+          'Rev Literature Survey': r.aR ?? '',
+          'Rev First Review PPT': r.bR ?? '',
+          'Rev Review Report': r.cR ?? '',
+          'Rev Journal Papers': r.dR ?? '',
+          'Rev Total': r.totalR ?? '',
+        }
+      }
+      return {
+        Review: slotLabel,
+        'Team ID': r.teamCode,
+        Student: r.studentName,
+        'Reg No': r.regNo,
+        Supervisor: r.supervisor,
+        Reviewer: r.reviewer,
+        'Sup Novelty': r.aS ?? '',
+        'Sup Abstract': r.bS ?? '',
+        'Sup SDG': r.cS ?? '',
+        'Sup Total': r.totalS ?? '',
+        'Rev Novelty': r.aR ?? '',
+        'Rev Abstract': r.bR ?? '',
+        'Rev SDG': r.cR ?? '',
+        'Rev Total': r.totalR ?? '',
+      }
+    })
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), 'Marks')
-    XLSX.writeFile(wb, `${exportPrefix}-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    XLSX.writeFile(
+      wb,
+      `${exportPrefix}-${reviewSlot}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    )
     toast.success('Marks report downloaded')
   }
 
   const cell = (v: number | null) =>
     v == null ? <span className="text-slate-400">—</span> : <span className="font-semibold">{v}</span>
 
+  const colSpan = progressive ? 16 : 14
+
   return (
     <>
-      <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-        Zeroth Review · supervisor and reviewer scores per student (max {ZEROTH_REVIEW_TOTAL_MAX} each)
-      </p>
+      <div className="mb-4 flex flex-wrap items-end gap-4">
+        <Select
+          label="Review"
+          value={reviewSlot}
+          onChange={(e) => setReviewSlot(e.target.value as ReviewSlot)}
+        >
+          {REVIEW_SLOT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
+        <p className="pb-2 text-sm text-slate-600 dark:text-slate-300">
+          {slotLabel} · supervisor and reviewer scores per student (max {maxTotal} each)
+          {progressive
+            ? ' · Literature Survey, First Review PPT, Review Report, Journal Papers'
+            : ' · Novelty, Abstract, SDG'}
+        </p>
+      </div>
+
       <div className="mb-4 flex flex-wrap gap-3">
         <Card padding="sm" className="inline-flex items-center gap-2">
           <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.students}</span>
@@ -292,37 +418,54 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                   <th className="px-3 py-3">Reg No</th>
                   <th className="px-3 py-3">Supervisor</th>
                   <th className="px-3 py-3">Reviewer</th>
-                  <th className="px-3 py-3 text-center" colSpan={4}>
+                  <th className="px-3 py-3 text-center" colSpan={progressive ? 5 : 4}>
                     Supervisor marks
                   </th>
-                  <th className="px-3 py-3 text-center" colSpan={4}>
+                  <th className="px-3 py-3 text-center" colSpan={progressive ? 5 : 4}>
                     Reviewer marks
                   </th>
                   <th className="px-3 py-3 text-center">Average</th>
                 </tr>
                 <tr className="text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   <th className="px-3 py-1" colSpan={5} />
-                  <th className="px-2 py-1 text-center">Nov</th>
-                  <th className="px-2 py-1 text-center">Abs</th>
-                  <th className="px-2 py-1 text-center">SDG</th>
-                  <th className="px-2 py-1 text-center">Tot</th>
-                  <th className="px-2 py-1 text-center">Nov</th>
-                  <th className="px-2 py-1 text-center">Abs</th>
-                  <th className="px-2 py-1 text-center">SDG</th>
-                  <th className="px-2 py-1 text-center">Tot</th>
+                  {progressive ? (
+                    <>
+                      <th className="px-2 py-1 text-center">Lit</th>
+                      <th className="px-2 py-1 text-center">PPT</th>
+                      <th className="px-2 py-1 text-center">Rep</th>
+                      <th className="px-2 py-1 text-center">Jrn</th>
+                      <th className="px-2 py-1 text-center">Tot</th>
+                      <th className="px-2 py-1 text-center">Lit</th>
+                      <th className="px-2 py-1 text-center">PPT</th>
+                      <th className="px-2 py-1 text-center">Rep</th>
+                      <th className="px-2 py-1 text-center">Jrn</th>
+                      <th className="px-2 py-1 text-center">Tot</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-2 py-1 text-center">Nov</th>
+                      <th className="px-2 py-1 text-center">Abs</th>
+                      <th className="px-2 py-1 text-center">SDG</th>
+                      <th className="px-2 py-1 text-center">Tot</th>
+                      <th className="px-2 py-1 text-center">Nov</th>
+                      <th className="px-2 py-1 text-center">Abs</th>
+                      <th className="px-2 py-1 text-center">SDG</th>
+                      <th className="px-2 py-1 text-center">Tot</th>
+                    </>
+                  )}
                   <th className="px-2 py-1 text-center">Avg</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={14} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan={colSpan} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                       No students match these filters.
                     </td>
                   </tr>
                 ) : (
                   filtered.map((r) => (
-                    <tr key={`${r.teamCode}-${r.regNo}`} className="bg-white dark:bg-app-surface">
+                    <tr key={`${reviewSlot}-${r.teamCode}-${r.regNo}`} className="bg-white dark:bg-app-surface">
                       <td className="px-3 py-2 font-mono text-xs font-semibold text-violet-700 dark:text-violet-300">
                         {r.teamCode}
                       </td>
@@ -330,14 +473,39 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                       <td className="px-3 py-2 font-mono text-xs text-slate-600 dark:text-slate-300">{r.regNo}</td>
                       <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{r.supervisor}</td>
                       <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">{r.reviewer}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.noveltyS)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.abstractS)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.sdgS)}</td>
-                      <td className="px-2 py-2 text-center text-violet-700 dark:text-violet-300">{cell(r.totalS)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.noveltyR)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.abstractR)}</td>
-                      <td className="px-2 py-2 text-center">{cell(r.sdgR)}</td>
-                      <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">{cell(r.totalR)}</td>
+                      {r.kind === 'progressive' ? (
+                        <>
+                          <td className="px-2 py-2 text-center">{cell(r.aS)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.bS)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.cS)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.dS)}</td>
+                          <td className="px-2 py-2 text-center text-violet-700 dark:text-violet-300">
+                            {cell(r.totalS)}
+                          </td>
+                          <td className="px-2 py-2 text-center">{cell(r.aR)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.bR)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.cR)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.dR)}</td>
+                          <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">
+                            {cell(r.totalR)}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-2 py-2 text-center">{cell(r.aS)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.bS)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.cS)}</td>
+                          <td className="px-2 py-2 text-center text-violet-700 dark:text-violet-300">
+                            {cell(r.totalS)}
+                          </td>
+                          <td className="px-2 py-2 text-center">{cell(r.aR)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.bR)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.cR)}</td>
+                          <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">
+                            {cell(r.totalR)}
+                          </td>
+                        </>
+                      )}
                       <td className="px-2 py-2 text-center font-bold text-purple-700 dark:text-purple-300">
                         {r.totalS != null && r.totalR != null ? (
                           ((r.totalS + r.totalR) / 2).toFixed(2)

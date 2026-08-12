@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import { Download, BookOpen, FileText, Presentation, Newspaper, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useTeacherTeams } from '@/hooks/useTeacherTeams'
 import { useReviewerTeams } from '@/hooks/useReviewerTeams'
+import { useAuth } from '@/hooks/useAuth'
+import { isSectionReviewer } from '@/lib/sectionReviewers'
 import { Card } from '@/components/ui/Card'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
@@ -128,6 +130,7 @@ function TeamSubmissionsTable({ teams, allUploads }: { teams: TeamWithDetails[];
 }
 
 export function TeacherTemplatesPanel() {
+  const { profile } = useAuth()
   const { data: supervisorTeams = [], isLoading: supLoading } = useTeacherTeams()
   const { data: reviewerTeams = [], isLoading: revLoading } = useReviewerTeams()
 
@@ -155,9 +158,9 @@ export function TeacherTemplatesPanel() {
   }
 
   // Deduplicate teams (a teacher could be both supervisor and reviewer for same team)
-  const reviewerOnlyTeams = reviewerTeams.filter(
-    (rt) => !supervisorTeams.some((st) => st.id === rt.id),
-  )
+  const reviewerOnlyTeams = isSectionReviewer(profile)
+    ? reviewerTeams
+    : reviewerTeams.filter((rt) => !supervisorTeams.some((st) => st.id === rt.id))
 
   return (
     <div className="space-y-8">

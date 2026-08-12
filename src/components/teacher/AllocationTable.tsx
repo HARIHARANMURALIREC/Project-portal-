@@ -15,12 +15,15 @@ interface AllocationTableProps {
   teams: TeamWithDetails[]
   showSupervisor?: boolean
   emptyMessage?: string
+  /** Expand to fill parent height instead of a fixed max height. */
+  fillHeight?: boolean
 }
 
 export function AllocationTable({
   teams,
   showSupervisor = false,
   emptyMessage = 'No project allocations yet.',
+  fillHeight = false,
 }: AllocationTableProps) {
   if (teams.length === 0) {
     return (
@@ -31,7 +34,7 @@ export function AllocationTable({
   }
 
   return (
-    <div className="max-h-[28rem] overflow-auto">
+    <div className={fillHeight ? 'h-full min-h-0 overflow-auto' : 'max-h-[28rem] overflow-auto'}>
       <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
         <thead className="sticky top-0 z-10 bg-white dark:bg-app-surface shadow-sm">
           <tr>

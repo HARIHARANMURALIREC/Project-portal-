@@ -134,6 +134,23 @@ export interface StudentReviewMarks {
   updated_at: string
 }
 
+/** Marks for 1st / 2nd / 3rd reviews (reviewer progressive rubrics). */
+export interface StudentProgressiveReviewMarks {
+  id: string
+  team_review_id: string
+  team_id: string
+  team_member_id: string
+  role: ReviewMarkerRole
+  literature_survey: number
+  first_review_ppt: number
+  review_report: number
+  journal_papers: number
+  total: number
+  marked_by: string
+  created_at: string
+  updated_at: string
+}
+
 /** @deprecated Use StudentReviewMarks — kept temporarily for type migrations */
 export type TeamReviewMarks = StudentReviewMarks
 

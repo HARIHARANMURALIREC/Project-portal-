@@ -1,5 +1,6 @@
 import type { Profile } from '@/types/database'
 import { getBatchLabel, getBatchIdForCoordinator, isBatchCoordinator } from '@/lib/batchCoordinators'
+import { isSectionReviewer } from '@/lib/sectionReviewers'
 
 export function isLeadCoordinator(profile: Pick<Profile, 'role' | 'supervisor_name'> | null | undefined): boolean {
   return profile?.role === 'teacher' && !profile.supervisor_name
@@ -33,5 +34,6 @@ export function coordinatorRoleLabel(
 export function teacherHomePath(profile: Pick<Profile, 'role' | 'supervisor_name'> | null | undefined): string {
   if (profile?.role !== 'teacher') return '/login'
   if (isCoordinatorPortalUser(profile)) return '/coordinator'
+  if (isSectionReviewer(profile)) return '/reviewer'
   return '/teacher'
 }

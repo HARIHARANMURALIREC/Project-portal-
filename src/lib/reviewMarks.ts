@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase'
-import type { ReviewMarkerRole, StudentReviewMarks } from '@/types/database'
+import type {
+  ReviewMarkerRole,
+  StudentProgressiveReviewMarks,
+  StudentReviewMarks,
+} from '@/types/database'
 
 export const ZEROTH_REVIEW_TITLE = 'Zeroth Review'
 
@@ -11,8 +15,44 @@ export const ZEROTH_REVIEW_RUBRICS = [
 
 export const ZEROTH_REVIEW_TOTAL_MAX = 25
 
+export type ReviewSlot = '0th' | '1st' | '2nd' | '3rd'
+
+export const REVIEW_SLOT_OPTIONS: { value: ReviewSlot; label: string }[] = [
+  { value: '0th', label: '0th Review' },
+  { value: '1st', label: '1st Review' },
+  { value: '2nd', label: '2nd Review' },
+  { value: '3rd', label: '3rd Review' },
+]
+
+export const PROGRESSIVE_REVIEW_RUBRICS = [
+  { key: 'literature_survey' as const, label: 'Literature Survey', max: 10 },
+  { key: 'first_review_ppt' as const, label: 'First Review PPT', max: 10 },
+  { key: 'review_report' as const, label: 'Review Report', max: 10 },
+  { key: 'journal_papers' as const, label: 'Journal Papers', max: 10 },
+] as const
+
+export const PROGRESSIVE_REVIEW_TOTAL_MAX = 40
+
 export function isZerothReview(title: string): boolean {
   return title.trim().toLowerCase() === ZEROTH_REVIEW_TITLE.toLowerCase()
+}
+
+export function matchReviewSlot(title: string, slot: ReviewSlot): boolean {
+  const t = title.trim().toLowerCase()
+  if (slot === '0th') {
+    return isZerothReview(title) || /\b0th\b/.test(t) || /\bzeroth\b/.test(t)
+  }
+  if (slot === '1st') {
+    return /\b1st\b/.test(t) || /\bfirst\b/.test(t) || t === 'review 1' || t.includes('review-1')
+  }
+  if (slot === '2nd') {
+    return /\b2nd\b/.test(t) || /\bsecond\b/.test(t) || t === 'review 2' || t.includes('review-2')
+  }
+  return /\b3rd\b/.test(t) || /\bthird\b/.test(t) || t === 'review 3' || t.includes('review-3')
+}
+
+export function isProgressiveReviewSlot(slot: ReviewSlot): boolean {
+  return slot === '1st' || slot === '2nd' || slot === '3rd'
 }
 
 export function computeZerothTotal(input: {
@@ -21,6 +61,22 @@ export function computeZerothTotal(input: {
   sdg_goal_mapping: number
 }): number {
   return Number((input.novelty_idea + input.abstract_content + input.sdg_goal_mapping).toFixed(1))
+}
+
+export function computeProgressiveTotal(input: {
+  literature_survey: number
+  first_review_ppt: number
+  review_report: number
+  journal_papers: number
+}): number {
+  return Number(
+    (
+      input.literature_survey +
+      input.first_review_ppt +
+      input.review_report +
+      input.journal_papers
+    ).toFixed(1),
+  )
 }
 
 export async function fetchStudentMarksForReview(teamReviewId: string): Promise<StudentReviewMarks[]> {
@@ -94,10 +150,80 @@ export async function upsertStudentZerothMarks(input: {
   return data as StudentReviewMarks
 }
 
+export async function fetchProgressiveMarksForReview(
+  teamReviewId: string,
+): Promise<StudentProgressiveReviewMarks[]> {
+  const { data, error } = await supabase
+    .from('student_progressive_review_marks')
+    .select('*')
+    .eq('team_review_id', teamReviewId)
+
+  if (error) throw error
+  return (data ?? []) as StudentProgressiveReviewMarks[]
+}
+
+export async function upsertStudentProgressiveMarks(input: {
+  teamReviewId: string
+  teamId: string
+  teamMemberId: string
+  role: ReviewMarkerRole
+  literature_survey: number
+  first_review_ppt: number
+  review_report: number
+  journal_papers: number
+  markedBy: string
+}): Promise<StudentProgressiveReviewMarks> {
+  const payload = {
+    team_review_id: input.teamReviewId,
+    team_id: input.teamId,
+    team_member_id: input.teamMemberId,
+    role: input.role,
+    literature_survey: input.literature_survey,
+    first_review_ppt: input.first_review_ppt,
+    review_report: input.review_report,
+    journal_papers: input.journal_papers,
+    marked_by: input.markedBy,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { data: existing } = await supabase
+    .from('student_progressive_review_marks')
+    .select('id')
+    .eq('team_review_id', input.teamReviewId)
+    .eq('team_member_id', input.teamMemberId)
+    .eq('role', input.role)
+    .maybeSingle()
+
+  if (existing?.id) {
+    const { data, error } = await supabase
+      .from('student_progressive_review_marks')
+      .update(payload)
+      .eq('id', existing.id)
+      .select('*')
+      .single()
+    if (error) throw error
+    return data as StudentProgressiveReviewMarks
+  }
+
+  const { data, error } = await supabase
+    .from('student_progressive_review_marks')
+    .insert(payload)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as StudentProgressiveReviewMarks
+}
+
 export function marksKey(teamMemberId: string, role: ReviewMarkerRole): string {
   return `${teamMemberId}:${role}`
 }
 
 export function indexStudentMarks(rows: StudentReviewMarks[]): Record<string, StudentReviewMarks> {
+  return Object.fromEntries(rows.map((r) => [marksKey(r.team_member_id, r.role), r]))
+}
+
+export function indexProgressiveMarks(
+  rows: StudentProgressiveReviewMarks[],
+): Record<string, StudentProgressiveReviewMarks> {
   return Object.fromEntries(rows.map((r) => [marksKey(r.team_member_id, r.role), r]))
 }

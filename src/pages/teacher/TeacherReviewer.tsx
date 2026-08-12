@@ -6,6 +6,7 @@ import { TeacherPageShell } from '@/components/teacher/TeacherPageShell'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
+import { ProgressiveReviewMarksPanel } from '@/components/reviews/ProgressiveReviewMarks'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -15,13 +16,25 @@ import { useTeamReviews } from '@/hooks/useTeamReviews'
 import { useAuth } from '@/hooks/useAuth'
 import { sortTeamMembers } from '@/lib/teamSort'
 import { formatReviewDateTime, formatReviewSchedule, isReviewCompleted, toDatetimeLocalValue } from '@/lib/reviews'
-import { isZerothReview } from '@/lib/reviewMarks'
+import {
+  REVIEW_SLOT_OPTIONS,
+  isProgressiveReviewSlot,
+  isZerothReview,
+  matchReviewSlot,
+  type ReviewSlot,
+} from '@/lib/reviewMarks'
+import { isSectionReviewer } from '@/lib/sectionReviewers'
 import { supabase } from '@/lib/supabase'
-import { StudentAttendancePanel } from '@/components/teacher/StudentAttendance'
 import { TeamProjectTopic } from '@/components/teacher/TeamProjectTopic'
 import type { TeamWithDetails } from '@/types/database'
 
-function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
+function ReviewerTeamPanel({
+  team,
+  reviewSlot,
+}: {
+  team: TeamWithDetails
+  reviewSlot: ReviewSlot
+}) {
   const { data: reviews = [], isLoading: reviewsLoading } = useTeamReviews(team.id)
   const [expanded, setExpanded] = useState(false)
   const [editingRemarks, setEditingRemarks] = useState<string | null>(null)
@@ -30,14 +43,14 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
-  const sortedReviews = reviews.slice().sort(
-    (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
-  )
+  const sortedReviews = reviews
+    .slice()
+    .filter((r) => matchReviewSlot(r.review_title, reviewSlot))
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
 
   const memberList = team.team_members?.length
     ? sortTeamMembers(team.team_members).map((m) => m.name).join(', ')
     : '—'
-  const zerothPending = sortedReviews.filter((r) => isZerothReview(r.review_title)).length
 
   const updateRemarksMutation = useMutation({
     mutationFn: async (reviewId: string) => {
@@ -64,11 +77,13 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
     },
   })
 
-  const startEditingRemarks = (review: typeof sortedReviews[0]) => {
+  const startEditingRemarks = (review: (typeof sortedReviews)[0]) => {
     setEditingRemarks(review.id)
     setRemarksText(review.reviewer_remarks || '')
     setRemarksDate(review.reviewer_remarks_date ? toDatetimeLocalValue(review.reviewer_remarks_date) : '')
   }
+
+  const slotLabel = REVIEW_SLOT_OPTIONS.find((o) => o.value === reviewSlot)?.label ?? reviewSlot
 
   return (
     <Card padding="none" className="overflow-hidden">
@@ -87,17 +102,18 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
                 Supervisor: {team.supervisor_name}
               </span>
             )}
-            <span className="text-sm text-slate-600 dark:text-slate-300">{sortedReviews.length} review(s)</span>
-            {zerothPending > 0 && (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
-                Zeroth Review
-              </span>
-            )}
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              {sortedReviews.length} {slotLabel.toLowerCase()}(s)
+            </span>
           </div>
           <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{memberList}</p>
           <TeamProjectTopic team={team} className="mt-2" />
         </div>
-        {expanded ? <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" /> : <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />}
+        {expanded ? (
+          <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
+        ) : (
+          <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
+        )}
       </button>
 
       {expanded && (
@@ -129,27 +145,24 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
                       {review.remarks && (
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Notes: {review.remarks}</p>
                       )}
-                      
-                      {/* Reviewer Remarks Section */}
+
                       <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 dark:border-sky-800 dark:bg-sky-950/40">
                         <div className="mb-2 flex items-center justify-between">
                           <p className="text-sm font-semibold text-sky-900 dark:text-sky-200">Reviewer Remarks</p>
                           {editingRemarks !== review.id && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => startEditingRemarks(review)}
-                            >
+                            <Button size="sm" variant="secondary" onClick={() => startEditingRemarks(review)}>
                               <Pencil className="mr-1 h-3 w-3" />
                               Edit
                             </Button>
                           )}
                         </div>
-                        
+
                         {editingRemarks === review.id ? (
                           <div className="space-y-2">
                             <div>
-                              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Remarks</label>
+                              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                Remarks
+                              </label>
                               <textarea
                                 value={remarksText}
                                 onChange={(e) => setRemarksText(e.target.value)}
@@ -196,18 +209,29 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
                             )}
                           </div>
                         ) : (
-                          <p className="text-sm text-slate-500 dark:text-slate-400 italic">No remarks added yet</p>
+                          <p className="text-sm italic text-slate-500 dark:text-slate-400">No remarks added yet</p>
                         )}
                       </div>
-                      
+
                       <ReviewFileDownloads teamId={team.id} reviewId={review.id} />
-                      <ZerothReviewMarksPanel
-                        teamId={team.id}
-                        review={review}
-                        members={team.team_members ?? []}
-                        markerRole="reviewer"
-                        canEdit
-                      />
+
+                      {reviewSlot === '0th' || isZerothReview(review.review_title) ? (
+                        <ZerothReviewMarksPanel
+                          teamId={team.id}
+                          review={review}
+                          members={team.team_members ?? []}
+                          markerRole="reviewer"
+                          canEdit
+                        />
+                      ) : isProgressiveReviewSlot(reviewSlot) ? (
+                        <ProgressiveReviewMarksPanel
+                          teamId={team.id}
+                          review={review}
+                          members={team.team_members ?? []}
+                          markerRole="reviewer"
+                          canEdit
+                        />
+                      ) : null}
                     </div>
                     <ReviewStatusBadge review={review} />
                   </div>
@@ -216,7 +240,7 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
             </ul>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              No common reviews scheduled yet for this team.
+              No {slotLabel.toLowerCase()} scheduled yet for this team.
             </p>
           )}
         </div>
@@ -225,8 +249,11 @@ function ReviewerTeamPanel({ team }: { team: TeamWithDetails }) {
   )
 }
 
-function TeacherReviewerContent() {
+export function TeacherReviewerContent() {
+  const { profile } = useAuth()
   const { data: teams = [], isLoading } = useReviewerTeams()
+  const sectionReviewer = isSectionReviewer(profile)
+  const [reviewSlot, setReviewSlot] = useState<ReviewSlot>('0th')
 
   return (
     <div className="space-y-6">
@@ -234,22 +261,44 @@ function TeacherReviewerContent() {
         <TableSkeleton rows={6} />
       ) : teams.length === 0 ? (
         <Card padding="lg" className="text-center text-sm text-slate-500 dark:text-slate-400">
-          No teams assigned to you as reviewer yet.
+          {sectionReviewer
+            ? 'No teams found for your sections yet.'
+            : 'No teams assigned to you as reviewer yet.'}
         </Card>
       ) : (
         <>
-          <section>
-            <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Student Attendance</h2>
-            <div className="space-y-4">
-              {teams.map((team) => (
-                <StudentAttendancePanel key={team.id} team={team} />
+          <Card padding="lg" className="border-violet-100 dark:border-violet-800">
+            <label
+              htmlFor="reviewer-slot"
+              className="mb-2 block text-sm font-semibold text-slate-900 dark:text-slate-100"
+            >
+              Select review
+            </label>
+            <select
+              id="reviewer-slot"
+              value={reviewSlot}
+              onChange={(e) => setReviewSlot(e.target.value as ReviewSlot)}
+              className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-600 dark:bg-app-surface dark:text-slate-100"
+            >
+              {REVIEW_SLOT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
-            </div>
-          </section>
+            </select>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              {reviewSlot === '0th'
+                ? '0th Review uses Novelty, Abstract, and SDG marks.'
+                : '1st / 2nd / 3rd Review use Literature Survey, First Review PPT, Review Report, and Journal Papers (max 10 each).'}
+            </p>
+          </Card>
+
           <section>
             <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Team Reviews</h2>
             <div className="space-y-4">
-              {teams.map((team) => <ReviewerTeamPanel key={team.id} team={team} />)}
+              {teams.map((team) => (
+                <ReviewerTeamPanel key={team.id} team={team} reviewSlot={reviewSlot} />
+              ))}
             </div>
           </section>
         </>

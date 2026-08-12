@@ -4,6 +4,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/hooks/useAuth'
 import { getBatchIdForCoordinator } from '@/lib/batchCoordinators'
 import { isCoordinatorPortalUser, isBatchCoordinatorSupervisor } from '@/lib/teacherRoutes'
+import { isSectionReviewer } from '@/lib/sectionReviewers'
 import type { TeacherNavKey } from '@/types/teacher'
 
 interface TeacherPageShellProps {
@@ -29,6 +30,10 @@ export function TeacherPageShell({ title, activeNav, children }: TeacherPageShel
   // Batch coordinators who are also supervisors (isBatchCoordinatorSupervisor) are allowed through.
   if (isCoordinatorPortalUser(profile) && !isDualRole) {
     return <Navigate to="/coordinator" replace />
+  }
+
+  if (isSectionReviewer(profile)) {
+    return <Navigate to="/reviewer" replace />
   }
 
   if (!profile?.supervisor_name) {

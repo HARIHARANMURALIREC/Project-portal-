@@ -1,4 +1,4 @@
-import type { Profile } from '@/types/database'
+import type { Profile } from '../types/database'
 
 /** Section batch coordinators — must match profiles.supervisor_name exactly. */
 export const BATCH_COORDINATORS: Record<string, string> = {

@@ -21,6 +21,12 @@ import { TeacherProfile } from '@/pages/teacher/TeacherProfile'
 import { TeacherTemplates } from '@/pages/teacher/TeacherTemplates'
 import { TeacherSdg } from '@/pages/teacher/TeacherSdg'
 import { TeacherPublications } from '@/pages/teacher/TeacherPublications'
+import { ReviewerDashboard } from '@/pages/reviewer/ReviewerDashboard'
+import { ReviewerMarks } from '@/pages/reviewer/ReviewerMarks'
+import { ReviewerUploads } from '@/pages/reviewer/ReviewerUploads'
+import { ReviewerSdg } from '@/pages/reviewer/ReviewerSdg'
+import { ReviewerPublications } from '@/pages/reviewer/ReviewerPublications'
+import { ReviewerProfile } from '@/pages/reviewer/ReviewerProfile'
 import { StudentDashboard } from '@/pages/student/StudentDashboard'
 import { AvailableTopics } from '@/pages/student/AvailableTopics'
 import { MyProject } from '@/pages/student/MyProject'
@@ -193,6 +199,54 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <TeacherPublications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviewer"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <ReviewerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviewer/marks"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <ReviewerMarks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviewer/uploads"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <ReviewerUploads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviewer/sdg"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <ReviewerSdg />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviewer/publications"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <ReviewerPublications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviewer/profile"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <ReviewerProfile />
               </ProtectedRoute>
             }
           />

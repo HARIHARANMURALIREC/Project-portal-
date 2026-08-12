@@ -506,7 +506,6 @@ export function LoginPage() {
                   label="Email"
                   type="email"
                   autoComplete="username"
-                  placeholder="reviewer1@gmail.com"
                   className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
                   error={reviewerForm.formState.errors.identifier?.message}
                   {...reviewerForm.register('identifier')}

@@ -9,10 +9,12 @@ import {
   PROGRESSIVE_REVIEW_RUBRICS,
   PROGRESSIVE_REVIEW_TOTAL_MAX,
   computeProgressiveTotal,
+  emptyProgressiveScores,
   fetchProgressiveMarksForReview,
   indexProgressiveMarks,
   marksKey,
   upsertStudentProgressiveMarks,
+  type ProgressiveRubricKey,
 } from '@/lib/reviewMarks'
 import type {
   ReviewMarkerRole,
@@ -46,50 +48,35 @@ function MemberProgressiveMarkRow({
 }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const [values, setValues] = useState<Record<(typeof PROGRESSIVE_REVIEW_RUBRICS)[number]['key'], string>>({
-    literature_survey: '',
-    first_review_ppt: '',
-    review_report: '',
-    journal_papers: '',
-  })
+  const [values, setValues] = useState(emptyProgressiveScores)
 
   useEffect(() => {
     if (!existing) {
-      setValues({
-        literature_survey: '',
-        first_review_ppt: '',
-        review_report: '',
-        journal_papers: '',
-      })
+      setValues(emptyProgressiveScores())
       return
     }
     setValues({
+      feasibility: String(existing.feasibility),
+      proposed_methodology: String(existing.proposed_methodology),
+      background: String(existing.background),
       literature_survey: String(existing.literature_survey),
-      first_review_ppt: String(existing.first_review_ppt),
-      review_report: String(existing.review_report),
-      journal_papers: String(existing.journal_papers),
+      reference_paper: String(existing.reference_paper),
     })
   }, [existing])
 
-  const parsed = {
-    literature_survey: parseScore(values.literature_survey, 10),
-    first_review_ppt: parseScore(values.first_review_ppt, 10),
-    review_report: parseScore(values.review_report, 10),
-    journal_papers: parseScore(values.journal_papers, 10),
-  }
+  const parsed = Object.fromEntries(
+    PROGRESSIVE_REVIEW_RUBRICS.map((r) => [r.key, parseScore(values[r.key], r.max)]),
+  ) as Record<ProgressiveRubricKey, number | null>
 
-  const liveTotal =
-    parsed.literature_survey != null &&
-    parsed.first_review_ppt != null &&
-    parsed.review_report != null &&
-    parsed.journal_papers != null
-      ? computeProgressiveTotal({
-          literature_survey: parsed.literature_survey,
-          first_review_ppt: parsed.first_review_ppt,
-          review_report: parsed.review_report,
-          journal_papers: parsed.journal_papers,
-        })
-      : null
+  const allFilled = PROGRESSIVE_REVIEW_RUBRICS.every((r) => parsed[r.key] != null)
+  const liveTotal = allFilled
+    ? computeProgressiveTotal(
+        Object.fromEntries(PROGRESSIVE_REVIEW_RUBRICS.map((r) => [r.key, parsed[r.key]!])) as Record<
+          ProgressiveRubricKey,
+          number
+        >,
+      )
+    : null
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -104,10 +91,11 @@ function MemberProgressiveMarkRow({
         teamId,
         teamMemberId: member.id,
         role,
+        feasibility: parsed.feasibility!,
+        proposed_methodology: parsed.proposed_methodology!,
+        background: parsed.background!,
         literature_survey: parsed.literature_survey!,
-        first_review_ppt: parsed.first_review_ppt!,
-        review_report: parsed.review_report!,
-        journal_papers: parsed.journal_papers!,
+        reference_paper: parsed.reference_paper!,
         markedBy: user.id,
       })
     },
@@ -157,7 +145,7 @@ function MemberProgressiveMarkRow({
         {member.name}{' '}
         <span className="font-mono text-xs font-normal text-slate-500">{member.reg_no}</span>
       </p>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {PROGRESSIVE_REVIEW_RUBRICS.map((rubric) => (
           <Input
             key={rubric.key}
@@ -228,7 +216,8 @@ export function ProgressiveReviewMarksPanel({
   return (
     <div className="mt-3 space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-violet-800 dark:text-violet-300">
-        Review marks (reviewer) — Literature Survey, First Review PPT, Review Report, Journal Papers
+        Review marks (reviewer) — Feasibility, Proposed Methodology, Background, Literature Survey,
+        Reference Paper (max 10 each)
       </p>
       {sorted.map((member) => (
         <MemberProgressiveMarkRow

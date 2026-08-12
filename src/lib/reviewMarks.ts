@@ -25,13 +25,26 @@ export const REVIEW_SLOT_OPTIONS: { value: ReviewSlot; label: string }[] = [
 ]
 
 export const PROGRESSIVE_REVIEW_RUBRICS = [
+  { key: 'feasibility' as const, label: 'Feasibility', max: 10 },
+  { key: 'proposed_methodology' as const, label: 'Proposed Methodology', max: 10 },
+  { key: 'background' as const, label: 'Background', max: 10 },
   { key: 'literature_survey' as const, label: 'Literature Survey', max: 10 },
-  { key: 'first_review_ppt' as const, label: 'First Review PPT', max: 10 },
-  { key: 'review_report' as const, label: 'Review Report', max: 10 },
-  { key: 'journal_papers' as const, label: 'Journal Papers', max: 10 },
+  { key: 'reference_paper' as const, label: 'Reference Paper', max: 10 },
 ] as const
 
-export const PROGRESSIVE_REVIEW_TOTAL_MAX = 40
+export const PROGRESSIVE_REVIEW_TOTAL_MAX = 50
+
+export type ProgressiveRubricKey = (typeof PROGRESSIVE_REVIEW_RUBRICS)[number]['key']
+
+export function emptyProgressiveScores(): Record<ProgressiveRubricKey, string> {
+  return {
+    feasibility: '',
+    proposed_methodology: '',
+    background: '',
+    literature_survey: '',
+    reference_paper: '',
+  }
+}
 
 export function isZerothReview(title: string): boolean {
   return title.trim().toLowerCase() === ZEROTH_REVIEW_TITLE.toLowerCase()
@@ -63,19 +76,9 @@ export function computeZerothTotal(input: {
   return Number((input.novelty_idea + input.abstract_content + input.sdg_goal_mapping).toFixed(1))
 }
 
-export function computeProgressiveTotal(input: {
-  literature_survey: number
-  first_review_ppt: number
-  review_report: number
-  journal_papers: number
-}): number {
+export function computeProgressiveTotal(input: Record<ProgressiveRubricKey, number>): number {
   return Number(
-    (
-      input.literature_survey +
-      input.first_review_ppt +
-      input.review_report +
-      input.journal_papers
-    ).toFixed(1),
+    PROGRESSIVE_REVIEW_RUBRICS.reduce((sum, r) => sum + input[r.key], 0).toFixed(1),
   )
 }
 
@@ -167,10 +170,11 @@ export async function upsertStudentProgressiveMarks(input: {
   teamId: string
   teamMemberId: string
   role: ReviewMarkerRole
+  feasibility: number
+  proposed_methodology: number
+  background: number
   literature_survey: number
-  first_review_ppt: number
-  review_report: number
-  journal_papers: number
+  reference_paper: number
   markedBy: string
 }): Promise<StudentProgressiveReviewMarks> {
   const payload = {
@@ -178,10 +182,11 @@ export async function upsertStudentProgressiveMarks(input: {
     team_id: input.teamId,
     team_member_id: input.teamMemberId,
     role: input.role,
+    feasibility: input.feasibility,
+    proposed_methodology: input.proposed_methodology,
+    background: input.background,
     literature_survey: input.literature_survey,
-    first_review_ppt: input.first_review_ppt,
-    review_report: input.review_report,
-    journal_papers: input.journal_papers,
+    reference_paper: input.reference_paper,
     marked_by: input.markedBy,
     updated_at: new Date().toISOString(),
   }

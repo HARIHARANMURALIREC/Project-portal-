@@ -141,10 +141,11 @@ export interface StudentProgressiveReviewMarks {
   team_id: string
   team_member_id: string
   role: ReviewMarkerRole
+  feasibility: number
+  proposed_methodology: number
+  background: number
   literature_survey: number
-  first_review_ppt: number
-  review_report: number
-  journal_papers: number
+  reference_paper: number
   total: number
   marked_by: string
   created_at: string

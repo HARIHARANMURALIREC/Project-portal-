@@ -1,5 +1,5 @@
 -- Progressive review marks (1st / 2nd / 3rd) for reviewers.
--- Rubrics: Literature Survey, First Review PPT, Review Report, Journal Papers (max 10 each).
+-- Rubrics: Feasibility, Proposed Methodology, Background, Literature Survey, Reference Paper (max 10 each).
 -- Safe to re-run (idempotent).
 
 create table if not exists public.student_progressive_review_marks (
@@ -8,12 +8,13 @@ create table if not exists public.student_progressive_review_marks (
   team_id uuid not null references public.teams(id) on delete cascade,
   team_member_id uuid not null references public.team_members(id) on delete cascade,
   role text not null check (role in ('supervisor', 'reviewer')),
+  feasibility numeric(4,1) not null check (feasibility >= 0 and feasibility <= 10),
+  proposed_methodology numeric(4,1) not null check (proposed_methodology >= 0 and proposed_methodology <= 10),
+  background numeric(4,1) not null check (background >= 0 and background <= 10),
   literature_survey numeric(4,1) not null check (literature_survey >= 0 and literature_survey <= 10),
-  first_review_ppt numeric(4,1) not null check (first_review_ppt >= 0 and first_review_ppt <= 10),
-  review_report numeric(4,1) not null check (review_report >= 0 and review_report <= 10),
-  journal_papers numeric(4,1) not null check (journal_papers >= 0 and journal_papers <= 10),
+  reference_paper numeric(4,1) not null check (reference_paper >= 0 and reference_paper <= 10),
   total numeric(5,1) generated always as (
-    literature_survey + first_review_ppt + review_report + journal_papers
+    feasibility + proposed_methodology + background + literature_survey + reference_paper
   ) stored,
   marked_by uuid not null references auth.users(id),
   created_at timestamptz not null default now(),

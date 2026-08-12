@@ -56,11 +56,13 @@ type ProgressiveMarkRow = {
   bS: number | null
   cS: number | null
   dS: number | null
+  eS: number | null
   totalS: number | null
   aR: number | null
   bR: number | null
   cR: number | null
   dR: number | null
+  eR: number | null
   totalR: number | null
 }
 
@@ -137,15 +139,17 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
             reviewer: team.reviewer_name ?? '—',
             studentName: member.name,
             regNo: member.reg_no,
-            aS: sup ? Number(sup.literature_survey) : null,
-            bS: sup ? Number(sup.first_review_ppt) : null,
-            cS: sup ? Number(sup.review_report) : null,
-            dS: sup ? Number(sup.journal_papers) : null,
+            aS: sup ? Number(sup.feasibility) : null,
+            bS: sup ? Number(sup.proposed_methodology) : null,
+            cS: sup ? Number(sup.background) : null,
+            dS: sup ? Number(sup.literature_survey) : null,
+            eS: sup ? Number(sup.reference_paper) : null,
             totalS: sup ? Number(sup.total) : null,
-            aR: rev ? Number(rev.literature_survey) : null,
-            bR: rev ? Number(rev.first_review_ppt) : null,
-            cR: rev ? Number(rev.review_report) : null,
-            dR: rev ? Number(rev.journal_papers) : null,
+            aR: rev ? Number(rev.feasibility) : null,
+            bR: rev ? Number(rev.proposed_methodology) : null,
+            cR: rev ? Number(rev.background) : null,
+            dR: rev ? Number(rev.literature_survey) : null,
+            eR: rev ? Number(rev.reference_paper) : null,
             totalR: rev ? Number(rev.total) : null,
           })
         } else {
@@ -241,15 +245,17 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
           'Reg No': r.regNo,
           Supervisor: r.supervisor,
           Reviewer: r.reviewer,
-          'Sup Literature Survey': r.aS ?? '',
-          'Sup First Review PPT': r.bS ?? '',
-          'Sup Review Report': r.cS ?? '',
-          'Sup Journal Papers': r.dS ?? '',
+          'Sup Feasibility': r.aS ?? '',
+          'Sup Proposed Methodology': r.bS ?? '',
+          'Sup Background': r.cS ?? '',
+          'Sup Literature Survey': r.dS ?? '',
+          'Sup Reference Paper': r.eS ?? '',
           'Sup Total': r.totalS ?? '',
-          'Rev Literature Survey': r.aR ?? '',
-          'Rev First Review PPT': r.bR ?? '',
-          'Rev Review Report': r.cR ?? '',
-          'Rev Journal Papers': r.dR ?? '',
+          'Rev Feasibility': r.aR ?? '',
+          'Rev Proposed Methodology': r.bR ?? '',
+          'Rev Background': r.cR ?? '',
+          'Rev Literature Survey': r.dR ?? '',
+          'Rev Reference Paper': r.eR ?? '',
           'Rev Total': r.totalR ?? '',
         }
       }
@@ -282,7 +288,7 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
   const cell = (v: number | null) =>
     v == null ? <span className="text-slate-400">—</span> : <span className="font-semibold">{v}</span>
 
-  const colSpan = progressive ? 16 : 14
+  const colSpan = progressive ? 18 : 14
 
   return (
     <>
@@ -301,7 +307,7 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
         <p className="pb-2 text-sm text-slate-600 dark:text-slate-300">
           {slotLabel} · supervisor and reviewer scores per student (max {maxTotal} each)
           {progressive
-            ? ' · Literature Survey, First Review PPT, Review Report, Journal Papers'
+            ? ' · Feasibility, Proposed Methodology, Background, Literature Survey, Reference Paper'
             : ' · Novelty, Abstract, SDG'}
         </p>
       </div>
@@ -418,10 +424,10 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                   <th className="px-3 py-3">Reg No</th>
                   <th className="px-3 py-3">Supervisor</th>
                   <th className="px-3 py-3">Reviewer</th>
-                  <th className="px-3 py-3 text-center" colSpan={progressive ? 5 : 4}>
+                  <th className="px-3 py-3 text-center" colSpan={progressive ? 6 : 4}>
                     Supervisor marks
                   </th>
-                  <th className="px-3 py-3 text-center" colSpan={progressive ? 5 : 4}>
+                  <th className="px-3 py-3 text-center" colSpan={progressive ? 6 : 4}>
                     Reviewer marks
                   </th>
                   <th className="px-3 py-3 text-center">Average</th>
@@ -430,15 +436,17 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                   <th className="px-3 py-1" colSpan={5} />
                   {progressive ? (
                     <>
+                      <th className="px-2 py-1 text-center">Fea</th>
+                      <th className="px-2 py-1 text-center">Met</th>
+                      <th className="px-2 py-1 text-center">Bkg</th>
                       <th className="px-2 py-1 text-center">Lit</th>
-                      <th className="px-2 py-1 text-center">PPT</th>
-                      <th className="px-2 py-1 text-center">Rep</th>
-                      <th className="px-2 py-1 text-center">Jrn</th>
+                      <th className="px-2 py-1 text-center">Ref</th>
                       <th className="px-2 py-1 text-center">Tot</th>
+                      <th className="px-2 py-1 text-center">Fea</th>
+                      <th className="px-2 py-1 text-center">Met</th>
+                      <th className="px-2 py-1 text-center">Bkg</th>
                       <th className="px-2 py-1 text-center">Lit</th>
-                      <th className="px-2 py-1 text-center">PPT</th>
-                      <th className="px-2 py-1 text-center">Rep</th>
-                      <th className="px-2 py-1 text-center">Jrn</th>
+                      <th className="px-2 py-1 text-center">Ref</th>
                       <th className="px-2 py-1 text-center">Tot</th>
                     </>
                   ) : (
@@ -479,6 +487,7 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                           <td className="px-2 py-2 text-center">{cell(r.bS)}</td>
                           <td className="px-2 py-2 text-center">{cell(r.cS)}</td>
                           <td className="px-2 py-2 text-center">{cell(r.dS)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.eS)}</td>
                           <td className="px-2 py-2 text-center text-violet-700 dark:text-violet-300">
                             {cell(r.totalS)}
                           </td>
@@ -486,6 +495,7 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                           <td className="px-2 py-2 text-center">{cell(r.bR)}</td>
                           <td className="px-2 py-2 text-center">{cell(r.cR)}</td>
                           <td className="px-2 py-2 text-center">{cell(r.dR)}</td>
+                          <td className="px-2 py-2 text-center">{cell(r.eR)}</td>
                           <td className="px-2 py-2 text-center text-sky-700 dark:text-sky-300">
                             {cell(r.totalR)}
                           </td>

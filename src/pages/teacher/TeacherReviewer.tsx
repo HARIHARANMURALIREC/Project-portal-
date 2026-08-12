@@ -289,7 +289,7 @@ export function TeacherReviewerContent() {
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               {reviewSlot === '0th'
                 ? '0th Review uses Novelty, Abstract, and SDG marks.'
-                : '1st / 2nd / 3rd Review use Literature Survey, First Review PPT, Review Report, and Journal Papers (max 10 each).'}
+                : '1st / 2nd / 3rd Review use Feasibility, Proposed Methodology, Background, Literature Survey, and Reference Paper (max 10 each).'}
             </p>
           </Card>
 

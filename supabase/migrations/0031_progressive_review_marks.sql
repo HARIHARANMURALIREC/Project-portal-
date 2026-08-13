@@ -7,7 +7,7 @@ create table if not exists public.student_progressive_review_marks (
   team_review_id uuid not null references public.team_reviews(id) on delete cascade,
   team_id uuid not null references public.teams(id) on delete cascade,
   team_member_id uuid not null references public.team_members(id) on delete cascade,
-  role text not null check (role in ('supervisor', 'reviewer')),
+  role text not null check (role in ('supervisor', 'reviewer', 'internal_reviewer', 'external_reviewer')),
   feasibility numeric(4,1) not null check (feasibility >= 0 and feasibility <= 10),
   proposed_methodology numeric(4,1) not null check (proposed_methodology >= 0 and proposed_methodology <= 10),
   background numeric(4,1) not null check (background >= 0 and background <= 10),

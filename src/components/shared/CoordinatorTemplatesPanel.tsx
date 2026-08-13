@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   TEMPLATE_CONFIGS,
+  templateAcceptLabel,
   fetchCoordinatorTemplates,
   uploadCoordinatorTemplate,
   deleteCoordinatorTemplate,
@@ -149,6 +150,9 @@ function CoordinatorTemplateCard({
           <Upload className="h-4 w-4" />
           {uploading ? 'Uploading…' : existing ? 'Replace demo file' : 'Upload demo file'}
         </button>
+        <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
+          Allowed: {templateAcceptLabel(config.accept)}
+        </p>
 
         <input
           ref={inputRef}

@@ -20,7 +20,7 @@ export interface TemplateConfig {
   badge: string
 }
 
-/** All template uploads accept PowerPoint and Word. */
+/** PowerPoint and Word only (e.g. First Review PPT). */
 export const TEMPLATE_ACCEPT_PPT_WORD =
   [
     '.ppt',
@@ -33,12 +33,27 @@ export const TEMPLATE_ACCEPT_PPT_WORD =
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ].join(',')
 
+/** Word, PowerPoint, and PDF (Literature Survey, Review Report, Journal Papers). */
+export const TEMPLATE_ACCEPT_PPT_WORD_PDF =
+  [
+    '.ppt',
+    '.pptx',
+    '.doc',
+    '.docx',
+    '.pdf',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/pdf',
+  ].join(',')
+
 export const TEMPLATE_CONFIGS: TemplateConfig[] = [
   {
     type: 'literature_survey',
     label: 'Literature Survey',
     description: 'Document all related works, research gaps, and comparative analysis.',
-    accept: TEMPLATE_ACCEPT_PPT_WORD,
+    accept: TEMPLATE_ACCEPT_PPT_WORD_PDF,
     iconBg: 'bg-rose-50 dark:bg-rose-950/40',
     iconColor: 'text-rose-600 dark:text-rose-400',
     borderColor: 'border-rose-100 dark:border-rose-800/50',
@@ -60,7 +75,7 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
     type: 'review_report',
     label: 'Review Report',
     description: 'Formal report with abstract, introduction, design, implementation, results, and conclusion.',
-    accept: TEMPLATE_ACCEPT_PPT_WORD,
+    accept: TEMPLATE_ACCEPT_PPT_WORD_PDF,
     iconBg: 'bg-violet-50 dark:bg-violet-950/40',
     iconColor: 'text-violet-600 dark:text-violet-400',
     borderColor: 'border-violet-100 dark:border-violet-800/50',
@@ -71,7 +86,7 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
     type: 'journal_papers',
     label: 'Journal Papers',
     description: 'IEEE / Scopus / SCI papers relevant to your project domain.',
-    accept: TEMPLATE_ACCEPT_PPT_WORD,
+    accept: TEMPLATE_ACCEPT_PPT_WORD_PDF,
     iconBg: 'bg-sky-50 dark:bg-sky-950/40',
     iconColor: 'text-sky-600 dark:text-sky-400',
     borderColor: 'border-sky-100 dark:border-sky-800/50',
@@ -79,6 +94,12 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
     badge: 'Reference',
   },
 ]
+
+export function templateAcceptLabel(accept: string): string {
+  return accept.includes('.pdf') || accept.includes('application/pdf')
+    ? 'PPT / Word / PDF'
+    : 'PPT / Word'
+}
 
 // ── Types ────────────────────────────────────────────────────
 

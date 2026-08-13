@@ -7,6 +7,7 @@ import { useStudentContext } from '@/hooks/useStudentContext'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   TEMPLATE_CONFIGS,
+  templateAcceptLabel,
   fetchCoordinatorTemplates,
   fetchTeamTemplateUploads,
   uploadTeamTemplate,
@@ -226,6 +227,9 @@ function StudentTemplateCard({
           <Upload className="h-4 w-4" />
           {uploading ? 'Uploading…' : myUpload ? `Replace submission` : `Upload my ${config.label}`}
         </button>
+        <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
+          Allowed: {templateAcceptLabel(config.accept)}
+        </p>
 
         <input
           ref={inputRef}

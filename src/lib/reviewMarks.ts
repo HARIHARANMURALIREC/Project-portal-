@@ -1,9 +1,25 @@
 import { supabase } from '@/lib/supabase'
+import { isSectionReviewer } from '@/lib/sectionReviewers'
 import type {
+  Profile,
   ReviewMarkerRole,
   StudentProgressiveReviewMarks,
   StudentReviewMarks,
 } from '@/types/database'
+
+export function reviewerMarkerRoleForProfile(
+  profile: Pick<Profile, 'role' | 'supervisor_name'> | null | undefined,
+): Extract<ReviewMarkerRole, 'internal_reviewer' | 'external_reviewer'> {
+  return isSectionReviewer(profile) ? 'external_reviewer' : 'internal_reviewer'
+}
+
+export function isInternalReviewerRole(role: ReviewMarkerRole): boolean {
+  return role === 'internal_reviewer' || role === 'reviewer'
+}
+
+export function isExternalReviewerRole(role: ReviewMarkerRole): boolean {
+  return role === 'external_reviewer'
+}
 
 export const ZEROTH_REVIEW_TITLE = 'Zeroth Review'
 

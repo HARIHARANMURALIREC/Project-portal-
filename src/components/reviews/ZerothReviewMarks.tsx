@@ -28,7 +28,10 @@ function parseScore(value: string, max: number): number | null {
 }
 
 function roleLabel(role: ReviewMarkerRole): string {
-  return role === 'supervisor' ? 'Supervisor' : 'Reviewer'
+  if (role === 'supervisor') return 'Supervisor'
+  if (role === 'external_reviewer') return 'External Reviewer'
+  if (role === 'internal_reviewer') return 'Internal Reviewer'
+  return 'Reviewer'
 }
 
 export function StudentMarksReadonly({
@@ -248,12 +251,11 @@ export function ZerothReviewMarksPanel({
   return (
     <div className="mt-3 space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-violet-800 dark:text-violet-300">
-        Zeroth Review marks {showBothRoles ? '(supervisor & reviewer)' : `(${roleLabel(markerRole)})`} — per student
+        Zeroth Review marks {showBothRoles ? '(supervisor, internal & external reviewer)' : `(${roleLabel(markerRole)})`} — per student
       </p>
       {sorted.map((member) => {
         if (showBothRoles) {
           const sup = byKey[marksKey(member.id, 'supervisor')]
-          const rev = byKey[marksKey(member.id, 'reviewer')]
           return (
             <div
               key={member.id}
@@ -263,9 +265,16 @@ export function ZerothReviewMarksPanel({
                 {member.name}{' '}
                 <span className="font-mono text-xs font-normal text-slate-500">{member.reg_no}</span>
               </p>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <StudentMarksReadonly marks={sup} label="Supervisor" />
-                <StudentMarksReadonly marks={rev} label="Reviewer" />
+                <StudentMarksReadonly
+                  marks={byKey[marksKey(member.id, 'internal_reviewer')] ?? byKey[marksKey(member.id, 'reviewer')]}
+                  label="Internal Reviewer"
+                />
+                <StudentMarksReadonly
+                  marks={byKey[marksKey(member.id, 'external_reviewer')]}
+                  label="External Reviewer"
+                />
               </div>
             </div>
           )

@@ -21,6 +21,7 @@ import {
   isProgressiveReviewSlot,
   isZerothReview,
   matchReviewSlot,
+  reviewerMarkerRoleForProfile,
   type ReviewSlot,
 } from '@/lib/reviewMarks'
 import { isSectionReviewer } from '@/lib/sectionReviewers'
@@ -31,9 +32,11 @@ import type { TeamWithDetails } from '@/types/database'
 function ReviewerTeamPanel({
   team,
   reviewSlot,
+  markerRole,
 }: {
   team: TeamWithDetails
   reviewSlot: ReviewSlot
+  markerRole: 'internal_reviewer' | 'external_reviewer'
 }) {
   const { data: reviews = [], isLoading: reviewsLoading } = useTeamReviews(team.id)
   const [expanded, setExpanded] = useState(false)
@@ -220,7 +223,7 @@ function ReviewerTeamPanel({
                           teamId={team.id}
                           review={review}
                           members={team.team_members ?? []}
-                          markerRole="reviewer"
+                          markerRole={markerRole}
                           canEdit
                         />
                       ) : isProgressiveReviewSlot(reviewSlot) ? (
@@ -228,7 +231,7 @@ function ReviewerTeamPanel({
                           teamId={team.id}
                           review={review}
                           members={team.team_members ?? []}
-                          markerRole="reviewer"
+                          markerRole={markerRole}
                           canEdit
                         />
                       ) : null}
@@ -254,6 +257,7 @@ export function TeacherReviewerContent() {
   const { data: teams = [], isLoading } = useReviewerTeams()
   const sectionReviewer = isSectionReviewer(profile)
   const [reviewSlot, setReviewSlot] = useState<ReviewSlot>('0th')
+  const markerRole = reviewerMarkerRoleForProfile(profile)
 
   return (
     <div className="space-y-6">
@@ -297,7 +301,12 @@ export function TeacherReviewerContent() {
             <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Team Reviews</h2>
             <div className="space-y-4">
               {teams.map((team) => (
-                <ReviewerTeamPanel key={team.id} team={team} reviewSlot={reviewSlot} />
+                <ReviewerTeamPanel
+                  key={team.id}
+                  team={team}
+                  reviewSlot={reviewSlot}
+                  markerRole={markerRole}
+                />
               ))}
             </div>
           </section>

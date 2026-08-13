@@ -117,7 +117,11 @@ export interface TeamReviewFile {
   updated_at: string
 }
 
-export type ReviewMarkerRole = 'supervisor' | 'reviewer'
+export type ReviewMarkerRole =
+  | 'supervisor'
+  | 'reviewer'
+  | 'internal_reviewer'
+  | 'external_reviewer'
 
 export interface StudentReviewMarks {
   id: string

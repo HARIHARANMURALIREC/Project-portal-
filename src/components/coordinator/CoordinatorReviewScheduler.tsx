@@ -100,14 +100,15 @@ function SupervisorBreakdown({
                         marks.filter((m) => m.role === 'supervisor').length
                       ).toFixed(1)
                     : null
+                const revMarks = marks.filter(
+                  (m) =>
+                    m.role === 'reviewer' ||
+                    m.role === 'internal_reviewer' ||
+                    m.role === 'external_reviewer',
+                )
                 const revAvg =
-                  marks.filter((m) => m.role === 'reviewer').length > 0
-                    ? (
-                        marks
-                          .filter((m) => m.role === 'reviewer')
-                          .reduce((s, m) => s + Number(m.total), 0) /
-                        marks.filter((m) => m.role === 'reviewer').length
-                      ).toFixed(1)
+                  revMarks.length > 0
+                    ? (revMarks.reduce((s, m) => s + Number(m.total), 0) / revMarks.length).toFixed(1)
                     : null
                 return (
                   <span

@@ -21,6 +21,31 @@ export function isExternalReviewerRole(role: ReviewMarkerRole): boolean {
   return role === 'external_reviewer'
 }
 
+/** Roles to try when reading/writing reviewer marks (legacy `reviewer` first for live RLS compatibility). */
+export function reviewerRoleLookupOrder(role: ReviewMarkerRole): ReviewMarkerRole[] {
+  if (role === 'external_reviewer') return ['external_reviewer', 'reviewer']
+  if (role === 'internal_reviewer' || role === 'reviewer') return ['reviewer', 'internal_reviewer']
+  return [role]
+}
+
+function throwSaveError(
+  error: { message?: string; details?: string; hint?: string; code?: string } | null,
+): never {
+  const parts = [error?.message, error?.details, error?.hint].filter(Boolean)
+  throw new Error(parts.join(' — ') || 'Failed to save marks')
+}
+
+function isRoleCompatibilityError(error: { message?: string; code?: string } | null): boolean {
+  const msg = (error?.message ?? '').toLowerCase()
+  return (
+    error?.code === '23514' ||
+    error?.code === '42501' ||
+    msg.includes('row-level security') ||
+    msg.includes('violates check constraint') ||
+    msg.includes('role_check')
+  )
+}
+
 export const ZEROTH_REVIEW_TITLE = 'Zeroth Review'
 
 export const ZEROTH_REVIEW_RUBRICS = [
@@ -129,11 +154,27 @@ export async function upsertStudentZerothMarks(input: {
   sdg_goal_mapping: number
   markedBy: string
 }): Promise<StudentReviewMarks> {
-  const payload = {
+  const roles = reviewerRoleLookupOrder(input.role)
+  let existing: { id: string; role: ReviewMarkerRole } | null = null
+
+  for (const role of roles) {
+    const { data } = await supabase
+      .from('student_review_marks')
+      .select('id, role')
+      .eq('team_review_id', input.teamReviewId)
+      .eq('team_member_id', input.teamMemberId)
+      .eq('role', role)
+      .maybeSingle()
+    if (data?.id) {
+      existing = data as { id: string; role: ReviewMarkerRole }
+      break
+    }
+  }
+
+  const basePayload = {
     team_review_id: input.teamReviewId,
     team_id: input.teamId,
     team_member_id: input.teamMemberId,
-    role: input.role,
     novelty_idea: input.novelty_idea,
     abstract_content: input.abstract_content,
     sdg_goal_mapping: input.sdg_goal_mapping,
@@ -141,32 +182,29 @@ export async function upsertStudentZerothMarks(input: {
     updated_at: new Date().toISOString(),
   }
 
-  const { data: existing } = await supabase
-    .from('student_review_marks')
-    .select('id')
-    .eq('team_review_id', input.teamReviewId)
-    .eq('team_member_id', input.teamMemberId)
-    .eq('role', input.role)
-    .maybeSingle()
-
   if (existing?.id) {
     const { data, error } = await supabase
       .from('student_review_marks')
-      .update(payload)
+      .update({ ...basePayload, role: existing.role })
       .eq('id', existing.id)
       .select('*')
       .single()
-    if (error) throw error
+    if (error) throwSaveError(error)
     return data as StudentReviewMarks
   }
 
-  const { data, error } = await supabase
-    .from('student_review_marks')
-    .insert(payload)
-    .select('*')
-    .single()
-  if (error) throw error
-  return data as StudentReviewMarks
+  let lastError: { message?: string; details?: string; hint?: string; code?: string } | null = null
+  for (const role of roles) {
+    const { data, error } = await supabase
+      .from('student_review_marks')
+      .insert({ ...basePayload, role })
+      .select('*')
+      .single()
+    if (!error) return data as StudentReviewMarks
+    lastError = error
+    if (!isRoleCompatibilityError(error)) throwSaveError(error)
+  }
+  throwSaveError(lastError)
 }
 
 export async function fetchProgressiveMarksForReview(
@@ -193,11 +231,27 @@ export async function upsertStudentProgressiveMarks(input: {
   reference_paper: number
   markedBy: string
 }): Promise<StudentProgressiveReviewMarks> {
-  const payload = {
+  const roles = reviewerRoleLookupOrder(input.role)
+  let existing: { id: string; role: ReviewMarkerRole } | null = null
+
+  for (const role of roles) {
+    const { data } = await supabase
+      .from('student_progressive_review_marks')
+      .select('id, role')
+      .eq('team_review_id', input.teamReviewId)
+      .eq('team_member_id', input.teamMemberId)
+      .eq('role', role)
+      .maybeSingle()
+    if (data?.id) {
+      existing = data as { id: string; role: ReviewMarkerRole }
+      break
+    }
+  }
+
+  const basePayload = {
     team_review_id: input.teamReviewId,
     team_id: input.teamId,
     team_member_id: input.teamMemberId,
-    role: input.role,
     feasibility: input.feasibility,
     proposed_methodology: input.proposed_methodology,
     background: input.background,
@@ -207,32 +261,29 @@ export async function upsertStudentProgressiveMarks(input: {
     updated_at: new Date().toISOString(),
   }
 
-  const { data: existing } = await supabase
-    .from('student_progressive_review_marks')
-    .select('id')
-    .eq('team_review_id', input.teamReviewId)
-    .eq('team_member_id', input.teamMemberId)
-    .eq('role', input.role)
-    .maybeSingle()
-
   if (existing?.id) {
     const { data, error } = await supabase
       .from('student_progressive_review_marks')
-      .update(payload)
+      .update({ ...basePayload, role: existing.role })
       .eq('id', existing.id)
       .select('*')
       .single()
-    if (error) throw error
+    if (error) throwSaveError(error)
     return data as StudentProgressiveReviewMarks
   }
 
-  const { data, error } = await supabase
-    .from('student_progressive_review_marks')
-    .insert(payload)
-    .select('*')
-    .single()
-  if (error) throw error
-  return data as StudentProgressiveReviewMarks
+  let lastError: { message?: string; details?: string; hint?: string; code?: string } | null = null
+  for (const role of roles) {
+    const { data, error } = await supabase
+      .from('student_progressive_review_marks')
+      .insert({ ...basePayload, role })
+      .select('*')
+      .single()
+    if (!error) return data as StudentProgressiveReviewMarks
+    lastError = error
+    if (!isRoleCompatibilityError(error)) throwSaveError(error)
+  }
+  throwSaveError(lastError)
 }
 
 export function marksKey(teamMemberId: string, role: ReviewMarkerRole): string {
@@ -247,4 +298,16 @@ export function indexProgressiveMarks(
   rows: StudentProgressiveReviewMarks[],
 ): Record<string, StudentProgressiveReviewMarks> {
   return Object.fromEntries(rows.map((r) => [marksKey(r.team_member_id, r.role), r]))
+}
+
+export function lookupMarksForRole<T>(
+  index: Record<string, T>,
+  teamMemberId: string,
+  role: ReviewMarkerRole,
+): T | undefined {
+  for (const candidate of reviewerRoleLookupOrder(role)) {
+    const hit = index[marksKey(teamMemberId, candidate)]
+    if (hit) return hit
+  }
+  return undefined
 }

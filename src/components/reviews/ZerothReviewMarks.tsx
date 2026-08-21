@@ -13,6 +13,7 @@ import {
   fetchStudentMarksForReviews,
   indexStudentMarks,
   isZerothReview,
+  lookupMarksForRole,
   marksKey,
   upsertStudentZerothMarks,
 } from '@/lib/reviewMarks'
@@ -284,7 +285,7 @@ export function ZerothReviewMarksPanel({
           <MemberMarkRow
             key={member.id}
             member={member}
-            existing={byKey[marksKey(member.id, markerRole)]}
+            existing={lookupMarksForRole(byKey, member.id, markerRole)}
             canEdit={canEdit}
             role={markerRole}
             teamId={teamId}

@@ -12,7 +12,7 @@ import {
   emptyProgressiveScores,
   fetchProgressiveMarksForReview,
   indexProgressiveMarks,
-  marksKey,
+  lookupMarksForRole,
   upsertStudentProgressiveMarks,
   type ProgressiveRubricKey,
 } from '@/lib/reviewMarks'
@@ -223,7 +223,7 @@ export function ProgressiveReviewMarksPanel({
         <MemberProgressiveMarkRow
           key={member.id}
           member={member}
-          existing={byKey[marksKey(member.id, markerRole)]}
+          existing={lookupMarksForRole(byKey, member.id, markerRole)}
           canEdit={canEdit}
           role={markerRole}
           teamId={teamId}

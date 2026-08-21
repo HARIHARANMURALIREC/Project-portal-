@@ -7,6 +7,7 @@ import { TeamProjectTopic } from '@/components/teacher/TeamProjectTopic'
 import { ReviewStatusBadge } from '@/components/reviews/ReviewList'
 import { ReviewFileDownloads } from '@/components/reviews/ReviewSubmissionPanel'
 import { ZerothReviewMarksPanel } from '@/components/reviews/ZerothReviewMarks'
+import { ProgressiveReviewMarksPanel } from '@/components/reviews/ProgressiveReviewMarks'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -21,17 +22,31 @@ import {
   isReviewCompleted,
   reopenTeamReview,
 } from '@/lib/reviews'
+import {
+  REVIEW_SLOT_OPTIONS,
+  isProgressiveReviewSlot,
+  isZerothReview,
+  matchReviewSlot,
+  type ReviewSlot,
+} from '@/lib/reviewMarks'
 import type { TeamReview, TeamWithDetails } from '@/types/database'
 
-function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
+function TeamReviewPanel({
+  team,
+  reviewSlot,
+}: {
+  team: TeamWithDetails
+  reviewSlot: ReviewSlot
+}) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const { data: reviews = [], isLoading: reviewsLoading } = useTeamReviews(team.id)
   const [expanded, setExpanded] = useState(false)
 
-  const sortedReviews = reviews.slice().sort(
-    (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
-  )
+  const sortedReviews = reviews
+    .slice()
+    .filter((r) => matchReviewSlot(r.review_title, reviewSlot))
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['teacher-teams'] })
@@ -68,6 +83,7 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
     ? sortTeamMembers(team.team_members).map((m) => m.name).join(', ')
     : '—'
   const pendingCount = sortedReviews.filter((r) => !isReviewCompleted(r)).length
+  const slotLabel = REVIEW_SLOT_OPTIONS.find((o) => o.value === reviewSlot)?.label ?? reviewSlot
 
   return (
     <Card padding="none" className="overflow-hidden">
@@ -86,7 +102,9 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
                 {team.supervisor_name}
               </span>
             )}
-            <span className="text-sm text-slate-600 dark:text-slate-300">{sortedReviews.length} review(s)</span>
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              {sortedReviews.length} {slotLabel.toLowerCase()}(s)
+            </span>
             {pendingCount > 0 && (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                 {pendingCount} upcoming
@@ -96,7 +114,11 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
           <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{memberList}</p>
           <TeamProjectTopic team={team} className="mt-2" />
         </div>
-        {expanded ? <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" /> : <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />}
+        {expanded ? (
+          <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
+        ) : (
+          <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
+        )}
       </button>
 
       {expanded && (
@@ -111,7 +133,7 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
                   className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{review.review_title}</p>
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                         Review date: {formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)}
@@ -147,13 +169,23 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
                           Reviewer: <span className="font-medium">{team.reviewer_name}</span>
                         </p>
                       )}
-                      <ZerothReviewMarksPanel
-                        teamId={team.id}
-                        review={review}
-                        members={team.team_members ?? []}
-                        markerRole="supervisor"
-                        canEdit
-                      />
+                      {reviewSlot === '0th' || isZerothReview(review.review_title) ? (
+                        <ZerothReviewMarksPanel
+                          teamId={team.id}
+                          review={review}
+                          members={team.team_members ?? []}
+                          markerRole="supervisor"
+                          canEdit
+                        />
+                      ) : isProgressiveReviewSlot(reviewSlot) ? (
+                        <ProgressiveReviewMarksPanel
+                          teamId={team.id}
+                          review={review}
+                          members={team.team_members ?? []}
+                          markerRole="supervisor"
+                          canEdit
+                        />
+                      ) : null}
                     </div>
                     <ReviewStatusBadge review={review} />
                   </div>
@@ -182,7 +214,8 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
             </ul>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              No common reviews scheduled yet. The coordinator will set the review date and time for all teams.
+              No {slotLabel.toLowerCase()} scheduled yet for this team. The coordinator will set the review
+              date and time.
             </p>
           )}
         </div>
@@ -193,13 +226,40 @@ function TeamReviewPanel({ team }: { team: TeamWithDetails }) {
 
 function TeacherReviewsContent() {
   const { data: teams = [], isLoading } = useTeacherTeams()
+  const [reviewSlot, setReviewSlot] = useState<ReviewSlot>('0th')
 
   return (
     <div className="space-y-4">
+      <Card padding="lg" className="border-violet-100 dark:border-violet-800">
+        <label
+          htmlFor="supervisor-review-slot"
+          className="mb-2 block text-sm font-semibold text-slate-900 dark:text-slate-100"
+        >
+          Select review
+        </label>
+        <select
+          id="supervisor-review-slot"
+          value={reviewSlot}
+          onChange={(e) => setReviewSlot(e.target.value as ReviewSlot)}
+          className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-600 dark:bg-app-surface dark:text-slate-100"
+        >
+          {REVIEW_SLOT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          {reviewSlot === '0th'
+            ? '0th Review uses Novelty, Abstract, and SDG marks (supervisor column).'
+            : '1st / 2nd / 3rd Review use Feasibility, Proposed Methodology, Background, Literature Survey, and Reference Paper (max 10 each).'}
+        </p>
+      </Card>
+
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Review date and time are set by the coordinator for all teams. For Zeroth Review, enter rubric marks
-        per student (Novelty, Abstract, SDG). Reviewers enter marks separately on the Reviewer page. Coordinators
-        see both; students see neither. Mark a review as completed when your team has finished it.
+        Review date and time are set by the coordinator for all teams. Enter supervisor marks for the selected
+        review. Reviewers enter marks separately on the Reviewer page. Coordinators see supervisor, internal,
+        and external marks; students see none. Mark a review as completed when your team has finished it.
       </p>
 
       {isLoading ? (
@@ -209,7 +269,7 @@ function TeacherReviewsContent() {
           No teams assigned to you yet.
         </Card>
       ) : (
-        teams.map((team) => <TeamReviewPanel key={team.id} team={team} />)
+        teams.map((team) => <TeamReviewPanel key={team.id} team={team} reviewSlot={reviewSlot} />)
       )}
     </div>
   )

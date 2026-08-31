@@ -50,7 +50,7 @@ type StudentLoginForm = z.infer<typeof studentLoginSchema>
 type CoordinatorLoginForm = z.infer<typeof coordinatorLoginSchema>
 type SupervisorLoginForm = z.infer<typeof supervisorLoginSchema>
 
-type LoginMode = 'student' | 'coordinator' | 'supervisor' | 'reviewer'
+type LoginMode = 'student' | 'coordinator' | 'supervisor'
 
 async function verifyStudentTeam(teamId: string): Promise<boolean> {
   const { data: member, error } = await supabase
@@ -104,10 +104,6 @@ export function LoginPage() {
   })
 
   const supervisorForm = useForm<SupervisorLoginForm>({
-    resolver: zodResolver(supervisorLoginSchema),
-  })
-
-  const reviewerForm = useForm<SupervisorLoginForm>({
     resolver: zodResolver(supervisorLoginSchema),
   })
 
@@ -189,7 +185,7 @@ export function LoginPage() {
     }
 
     if (isSectionReviewerEmail(email)) {
-      toast.error('Use the Reviewer tab to sign in.')
+      toast.error('This account cannot sign in here. Contact the administrator.')
       return
     }
 
@@ -230,7 +226,7 @@ export function LoginPage() {
       await clearLocalAuthSession()
       toast.error(
         isSectionReviewer(loginProfile)
-          ? 'This account is a section reviewer. Sign in on the Reviewer tab.'
+          ? 'This account cannot sign in here. Contact the administrator.'
           : 'This account is not a coordinator. Sign in on the Supervisor tab.',
       )
       return
@@ -290,43 +286,6 @@ export function LoginPage() {
     navigate(teacherHomePath(loginProfile), { replace: true })
   }
 
-  async function onReviewerSubmit(data: SupervisorLoginForm) {
-    if (!isSupabaseConfigured) {
-      toast.error(supabaseConfigError ?? 'Supabase is not configured.')
-      return
-    }
-
-    const email = data.identifier.trim().toLowerCase()
-    if (!isSectionReviewerEmail(email)) {
-      toast.error('Use reviewer1@gmail.com or reviewer2@gmail.com on this tab.')
-      return
-    }
-
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: data.password,
-    })
-
-    if (error) {
-      toast.error(
-        error.message === 'Invalid login credentials'
-          ? 'Check your reviewer email and password.'
-          : error.message,
-      )
-      return
-    }
-
-    const loginProfile = authData.user ? await fetchLoginProfile(authData.user.id) : null
-    if (!isSectionReviewer(loginProfile)) {
-      await clearLocalAuthSession()
-      toast.error('This account is not a section reviewer.')
-      return
-    }
-
-    toast.success('Signed in successfully')
-    navigate('/reviewer', { replace: true })
-  }
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white dark:bg-app-black">
@@ -384,7 +343,7 @@ export function LoginPage() {
 
             {studentPortalClosed && (
               <div className="mb-4 rounded-lg border border-red-200/80 bg-red-50/70 px-3 py-2 text-left text-xs text-red-900 backdrop-blur-sm dark:border-red-800/60 dark:bg-red-950/50 dark:text-red-200">
-                The portal is currently closed. Student login is disabled. Coordinators, supervisors, reviewers, and administrators can still sign in.
+                The portal is currently closed. Student login is disabled. Coordinators, supervisors, and administrators can still sign in.
               </div>
             )}
 
@@ -421,17 +380,6 @@ export function LoginPage() {
                 }`}
               >
                 Supervisor
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('reviewer')}
-                className={`flex-1 rounded-lg px-1.5 py-2 text-[11px] font-medium transition sm:px-2 sm:text-sm ${
-                  mode === 'reviewer'
-                    ? 'bg-white/90 text-violet-700 shadow-sm backdrop-blur-sm dark:bg-white/20 dark:text-violet-200'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                }`}
-              >
-                Reviewer
               </button>
             </div>
 
@@ -498,36 +446,6 @@ export function LoginPage() {
                   className="mt-2 shadow-lg shadow-violet-500/25"
                 >
                   {coordinatorForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
-                </Button>
-              </form>
-            ) : mode === 'reviewer' ? (
-              <form onSubmit={reviewerForm.handleSubmit(onReviewerSubmit)} className="space-y-4">
-                <Input
-                  label="Email"
-                  type="email"
-                  autoComplete="username"
-                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
-                  error={reviewerForm.formState.errors.identifier?.message}
-                  {...reviewerForm.register('identifier')}
-                />
-
-                <Input
-                  label="Password"
-                  type="password"
-                  autoComplete="current-password"
-                  className="border-white/50 !bg-white/45 backdrop-blur-sm dark:border-white/15 dark:!bg-white/10"
-                  error={reviewerForm.formState.errors.password?.message}
-                  {...reviewerForm.register('password')}
-                />
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  size="lg"
-                  disabled={reviewerForm.formState.isSubmitting || !isSupabaseConfigured}
-                  className="mt-2 shadow-lg shadow-violet-500/25"
-                >
-                  {reviewerForm.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>
             ) : (

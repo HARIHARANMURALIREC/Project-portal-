@@ -6,15 +6,16 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { sortTeamMembers } from '@/lib/teamSort'
 import {
-  PROGRESSIVE_REVIEW_RUBRICS,
   PROGRESSIVE_REVIEW_TOTAL_MAX,
-  computeProgressiveTotal,
+  computeProgressiveTotalForRubrics,
   emptyProgressiveScores,
   fetchProgressiveMarksForReview,
+  getProgressiveRubricsForSlot,
   indexProgressiveMarks,
   lookupMarksForRole,
   upsertStudentProgressiveMarks,
   type ProgressiveRubricKey,
+  type ReviewSlot,
 } from '@/lib/reviewMarks'
 import type {
   ReviewMarkerRole,
@@ -38,6 +39,7 @@ function MemberProgressiveMarkRow({
   role,
   teamId,
   reviewId,
+  rubrics,
 }: {
   member: MarkableMember
   existing: StudentProgressiveReviewMarks | null | undefined
@@ -45,6 +47,7 @@ function MemberProgressiveMarkRow({
   role: ReviewMarkerRole
   teamId: string
   reviewId: string
+  rubrics: ReturnType<typeof getProgressiveRubricsForSlot>
 }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -65,13 +68,14 @@ function MemberProgressiveMarkRow({
   }, [existing])
 
   const parsed = Object.fromEntries(
-    PROGRESSIVE_REVIEW_RUBRICS.map((r) => [r.key, parseScore(values[r.key], r.max)]),
+    rubrics.map((r) => [r.key, parseScore(values[r.key], r.max)]),
   ) as Record<ProgressiveRubricKey, number | null>
 
-  const allFilled = PROGRESSIVE_REVIEW_RUBRICS.every((r) => parsed[r.key] != null)
+  const allFilled = rubrics.every((r) => parsed[r.key] != null)
   const liveTotal = allFilled
-    ? computeProgressiveTotal(
-        Object.fromEntries(PROGRESSIVE_REVIEW_RUBRICS.map((r) => [r.key, parsed[r.key]!])) as Record<
+    ? computeProgressiveTotalForRubrics(
+        rubrics,
+        Object.fromEntries(rubrics.map((r) => [r.key, parsed[r.key]!])) as Record<
           ProgressiveRubricKey,
           number
         >,
@@ -81,7 +85,7 @@ function MemberProgressiveMarkRow({
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('Not signed in')
-      for (const rubric of PROGRESSIVE_REVIEW_RUBRICS) {
+      for (const rubric of rubrics) {
         if (parsed[rubric.key] == null) {
           throw new Error(`${rubric.label} must be 0–${rubric.max}`)
         }
@@ -119,7 +123,7 @@ function MemberProgressiveMarkRow({
           <p className="text-xs text-slate-500 dark:text-slate-400">Marks not entered</p>
         ) : (
           <ul className="space-y-0.5 text-xs text-slate-700 dark:text-slate-200">
-            {PROGRESSIVE_REVIEW_RUBRICS.map((r) => (
+            {rubrics.map((r) => (
               <li key={r.key} className="flex justify-between gap-2">
                 <span>{r.label}</span>
                 <span className="font-semibold">
@@ -146,7 +150,7 @@ function MemberProgressiveMarkRow({
         <span className="font-mono text-xs font-normal text-slate-500">{member.reg_no}</span>
       </p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        {PROGRESSIVE_REVIEW_RUBRICS.map((rubric) => (
+        {rubrics.map((rubric) => (
           <Input
             key={rubric.key}
             label={`${rubric.label} (max ${rubric.max})`}
@@ -189,14 +193,18 @@ export function ProgressiveReviewMarksPanel({
   members,
   markerRole,
   canEdit,
+  reviewSlot,
 }: {
   teamId: string
   review: TeamReview
   members: MarkableMember[]
   markerRole: ReviewMarkerRole
   canEdit: boolean
+  reviewSlot: ReviewSlot
 }) {
   const sorted = useMemo(() => sortTeamMembers(members), [members])
+  const rubrics = useMemo(() => getProgressiveRubricsForSlot(reviewSlot), [reviewSlot])
+  const roleLabel = markerRole === 'supervisor' ? 'supervisor' : 'reviewer'
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['student-progressive-marks', review.id],
@@ -216,8 +224,7 @@ export function ProgressiveReviewMarksPanel({
   return (
     <div className="mt-3 space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-violet-800 dark:text-violet-300">
-        Review marks (reviewer) — Feasibility, Proposed Methodology, Background, Literature Survey,
-        Reference Paper (max 10 each)
+        Review marks ({roleLabel}) — {rubrics.map((r) => `${r.label} (max ${r.max})`).join(', ')}
       </p>
       {sorted.map((member) => (
         <MemberProgressiveMarkRow
@@ -228,6 +235,7 @@ export function ProgressiveReviewMarksPanel({
           role={markerRole}
           teamId={teamId}
           reviewId={review.id}
+          rubrics={rubrics}
         />
       ))}
     </div>

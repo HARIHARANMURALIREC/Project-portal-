@@ -66,16 +66,58 @@ export const REVIEW_SLOT_OPTIONS: { value: ReviewSlot; label: string }[] = [
 ]
 
 export const PROGRESSIVE_REVIEW_RUBRICS = [
-  { key: 'feasibility' as const, label: 'Feasibility', max: 10 },
-  { key: 'proposed_methodology' as const, label: 'Proposed Methodology', max: 10 },
-  { key: 'background' as const, label: 'Background', max: 10 },
-  { key: 'literature_survey' as const, label: 'Literature Survey', max: 10 },
-  { key: 'reference_paper' as const, label: 'Reference Paper', max: 10 },
+  { key: 'feasibility' as const, label: 'Feasibility', short: 'Fea', max: 10 },
+  { key: 'proposed_methodology' as const, label: 'Proposed Methodology', short: 'Met', max: 10 },
+  { key: 'background' as const, label: 'Background', short: 'Bkg', max: 10 },
+  { key: 'literature_survey' as const, label: 'Literature Survey', short: 'Lit', max: 10 },
+  { key: 'reference_paper' as const, label: 'Reference Paper', short: 'Ref', max: 10 },
+] as const
+
+/** Review II — same DB columns as 1st/3rd, different rubric labels (max 10 each, total 50). */
+export const SECOND_REVIEW_RUBRICS = [
+  {
+    key: 'feasibility' as const,
+    label: 'Problem statement & Architecture',
+    short: 'PSA',
+    max: 10,
+  },
+  { key: 'proposed_methodology' as const, label: 'Proposed Methodology', short: 'Met', max: 10 },
+  {
+    key: 'background' as const,
+    label: 'Modules Design & Description',
+    short: 'Mod',
+    max: 10,
+  },
+  { key: 'literature_survey' as const, label: 'Modules Demo', short: 'Demo', max: 10 },
+  {
+    key: 'reference_paper' as const,
+    label: 'Journal/Conference paper readiness',
+    short: 'Jour',
+    max: 10,
+  },
 ] as const
 
 export const PROGRESSIVE_REVIEW_TOTAL_MAX = 50
 
 export type ProgressiveRubricKey = (typeof PROGRESSIVE_REVIEW_RUBRICS)[number]['key']
+export type ProgressiveRubricConfig = {
+  key: ProgressiveRubricKey
+  label: string
+  short: string
+  max: number
+}
+
+export function getProgressiveRubricsForSlot(slot: ReviewSlot): ProgressiveRubricConfig[] {
+  if (slot === '2nd') return [...SECOND_REVIEW_RUBRICS]
+  if (slot === '1st' || slot === '3rd') return [...PROGRESSIVE_REVIEW_RUBRICS]
+  return [...PROGRESSIVE_REVIEW_RUBRICS]
+}
+
+export function progressiveRubricDescription(slot: ReviewSlot): string {
+  return getProgressiveRubricsForSlot(slot)
+    .map((r) => `${r.label} (${r.max})`)
+    .join(', ')
+}
 
 export function emptyProgressiveScores(): Record<ProgressiveRubricKey, string> {
   return {
@@ -100,7 +142,13 @@ export function matchReviewSlot(title: string, slot: ReviewSlot): boolean {
     return /\b1st\b/.test(t) || /\bfirst\b/.test(t) || t === 'review 1' || t.includes('review-1')
   }
   if (slot === '2nd') {
-    return /\b2nd\b/.test(t) || /\bsecond\b/.test(t) || t === 'review 2' || t.includes('review-2')
+    return (
+      /\b2nd\b/.test(t) ||
+      /\bsecond\b/.test(t) ||
+      /\breview\s*ii\b/.test(t) ||
+      t === 'review 2' ||
+      t.includes('review-2')
+    )
   }
   return /\b3rd\b/.test(t) || /\bthird\b/.test(t) || t === 'review 3' || t.includes('review-3')
 }
@@ -118,9 +166,14 @@ export function computeZerothTotal(input: {
 }
 
 export function computeProgressiveTotal(input: Record<ProgressiveRubricKey, number>): number {
-  return Number(
-    PROGRESSIVE_REVIEW_RUBRICS.reduce((sum, r) => sum + input[r.key], 0).toFixed(1),
-  )
+  return computeProgressiveTotalForRubrics(PROGRESSIVE_REVIEW_RUBRICS, input)
+}
+
+export function computeProgressiveTotalForRubrics(
+  rubrics: readonly ProgressiveRubricConfig[],
+  input: Record<ProgressiveRubricKey, number>,
+): number {
+  return Number(rubrics.reduce((sum, r) => sum + input[r.key], 0).toFixed(1))
 }
 
 export async function fetchStudentMarksForReview(teamReviewId: string): Promise<StudentReviewMarks[]> {

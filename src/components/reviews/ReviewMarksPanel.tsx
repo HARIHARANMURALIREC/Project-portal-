@@ -16,11 +16,13 @@ import {
   PROGRESSIVE_REVIEW_TOTAL_MAX,
   REVIEW_SLOT_OPTIONS,
   ZEROTH_REVIEW_TOTAL_MAX,
+  getProgressiveRubricsForSlot,
   indexProgressiveMarks,
   indexStudentMarks,
   isProgressiveReviewSlot,
   marksKey,
   matchReviewSlot,
+  progressiveRubricDescription,
   type ReviewSlot,
 } from '@/lib/reviewMarks'
 import { sortTeamMembers } from '@/lib/teamSort'
@@ -251,30 +253,30 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
 
   const slotLabel = REVIEW_SLOT_OPTIONS.find((o) => o.value === reviewSlot)?.label ?? reviewSlot
   const maxTotal = progressive ? PROGRESSIVE_REVIEW_TOTAL_MAX : ZEROTH_REVIEW_TOTAL_MAX
+  const progressiveRubrics = useMemo(
+    () => (progressive ? getProgressiveRubricsForSlot(reviewSlot) : []),
+    [progressive, reviewSlot],
+  )
 
   const exportExcel = () => {
     const exportRows = filtered.map((r) => {
       if (r.kind === 'progressive') {
-        return {
+        const row: Record<string, string | number> = {
           Review: slotLabel,
           'Team ID': r.teamCode,
           Student: r.studentName,
           'Reg No': r.regNo,
           Supervisor: r.supervisor,
           'Assigned Reviewer': r.reviewer,
-          'Sup Feasibility': r.supervisorScores.a ?? '',
-          'Sup Proposed Methodology': r.supervisorScores.b ?? '',
-          'Sup Background': r.supervisorScores.c ?? '',
-          'Sup Literature Survey': r.supervisorScores.d ?? '',
-          'Sup Reference Paper': r.supervisorScores.e ?? '',
-          'Sup Total': r.supervisorScores.total ?? '',
-          'Rev Feasibility': r.reviewerScores.a ?? '',
-          'Rev Proposed Methodology': r.reviewerScores.b ?? '',
-          'Rev Background': r.reviewerScores.c ?? '',
-          'Rev Literature Survey': r.reviewerScores.d ?? '',
-          'Rev Reference Paper': r.reviewerScores.e ?? '',
-          'Rev Total': r.reviewerScores.total ?? '',
         }
+        progressiveRubrics.forEach((rub, i) => {
+          const scoreKey = ['a', 'b', 'c', 'd', 'e'][i] as 'a' | 'b' | 'c' | 'd' | 'e'
+          row[`Sup ${rub.label}`] = r.supervisorScores[scoreKey] ?? ''
+          row[`Rev ${rub.label}`] = r.reviewerScores[scoreKey] ?? ''
+        })
+        row['Sup Total'] = r.supervisorScores.total ?? ''
+        row['Rev Total'] = r.reviewerScores.total ?? ''
+        return row
       }
       return {
         Review: slotLabel,
@@ -340,9 +342,7 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
         </Select>
         <p className="pb-2 text-sm text-slate-600 dark:text-slate-300">
           {slotLabel} · supervisor and reviewer scores (max {maxTotal} each)
-          {progressive
-            ? ' · Feasibility, Proposed Methodology, Background, Literature Survey, Reference Paper'
-            : ' · Novelty, Abstract, SDG'}
+          {progressive ? ` · ${progressiveRubricDescription(reviewSlot)}` : ' · Novelty, Abstract, SDG'}
         </p>
       </div>
 
@@ -462,16 +462,18 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
                   <th className="px-3 py-1" colSpan={5} />
                   {progressive ? (
                     <>
-                      {(['Fea', 'Met', 'Bkg', 'Lit', 'Ref', 'Tot'] as const).map((h) => (
-                        <th key={`s-${h}`} className="px-2 py-1 text-center">
-                          {h}
+                      {progressiveRubrics.map((r) => (
+                        <th key={`s-${r.key}`} className="px-2 py-1 text-center">
+                          {r.short}
                         </th>
                       ))}
-                      {(['Fea', 'Met', 'Bkg', 'Lit', 'Ref', 'Tot'] as const).map((h) => (
-                        <th key={`r-${h}`} className="px-2 py-1 text-center">
-                          {h}
+                      <th className="px-2 py-1 text-center">Tot</th>
+                      {progressiveRubrics.map((r) => (
+                        <th key={`r-${r.key}`} className="px-2 py-1 text-center">
+                          {r.short}
                         </th>
                       ))}
+                      <th className="px-2 py-1 text-center">Tot</th>
                     </>
                   ) : (
                     <>

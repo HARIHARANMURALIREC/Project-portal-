@@ -1,14 +1,10 @@
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
 import { TeamSdgOverviewPanel } from '@/components/shared/TeamSdgOverviewPanel'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
-import { useQuery } from '@tanstack/react-query'
-import { fetchAllCoordinatorTeams } from '@/lib/coordinatorData'
+import { useCoordinatorTeams } from '@/hooks/useCoordinatorTeams'
 
 export function CoordinatorSdg() {
-  const { data: teams = [], isLoading } = useQuery({
-    queryKey: ['coordinator-teams'],
-    queryFn: fetchAllCoordinatorTeams,
-  })
+  const { data: teams = [], isLoading } = useCoordinatorTeams()
 
   return (
     <CoordinatorPageShell title="SDG Page" activeNav="sdg">

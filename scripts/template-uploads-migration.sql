@@ -55,3 +55,11 @@ create policy "All auth read team template uploads"
   on public.team_template_uploads for select to authenticated using (true);
 create policy "All auth manage team template uploads"
   on public.team_template_uploads for all to authenticated using (true) with check (true);
+
+-- 5. Batch coordinators: read all team codes for portal-wide template/upload lists
+-- (uploads are visible to all auth users; team rows were section-scoped only)
+drop policy if exists "Batch coordinators can read all teams for portal" on public.teams;
+create policy "Batch coordinators can read all teams for portal"
+  on public.teams for select
+  to authenticated
+  using (public.is_batch_coordinator());

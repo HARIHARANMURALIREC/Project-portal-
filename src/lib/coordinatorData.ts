@@ -1,12 +1,15 @@
 import { supabase } from '@/lib/supabase'
 import type {
+  Profile,
   StudentProgressiveReviewMarks,
   StudentReviewMarks,
   TeamReview,
   TeamReviewFile,
   TeamWithDetails,
 } from '@/types/database'
+import { getBatchIdForCoordinator } from '@/lib/batchCoordinators'
 import { withSortedTeams } from '@/lib/teamSort'
+import { isLeadCoordinator } from '@/lib/teacherRoutes'
 import { ZEROTH_REVIEW_TITLE } from '@/lib/reviewMarks'
 
 export async function fetchAllCoordinatorTeams(): Promise<TeamWithDetails[]> {
@@ -23,6 +26,19 @@ export async function fetchAllCoordinatorTeams(): Promise<TeamWithDetails[]> {
 
   if (error) throw error
   return withSortedTeams((data ?? []) as TeamWithDetails[])
+}
+
+/** Lead coordinator: all teams. Section coordinator: only their batch (IT A → 27A*, etc.). */
+export async function fetchCoordinatorTeamsForProfile(
+  profile: Pick<Profile, 'role' | 'supervisor_name'> | null | undefined,
+): Promise<TeamWithDetails[]> {
+  const teams = await fetchAllCoordinatorTeams()
+  if (isLeadCoordinator(profile)) return teams
+
+  const batchId = getBatchIdForCoordinator(profile)
+  if (!batchId) return teams
+
+  return teams.filter((team) => team.batch_id === batchId)
 }
 
 export async function fetchAllReviewFiles(): Promise<TeamReviewFile[]> {

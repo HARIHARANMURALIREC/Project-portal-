@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
@@ -14,7 +13,7 @@ import {
 } from '@/components/teacher/AllocationTable'
 import { CoordinatorReviewScheduler } from '@/components/coordinator/CoordinatorReviewScheduler'
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
-import { fetchAllCoordinatorTeams } from '@/lib/coordinatorData'
+import { useCoordinatorTeams } from '@/hooks/useCoordinatorTeams'
 import { useAuth } from '@/hooks/useAuth'
 import { getBatchLabel, getBatchIdForCoordinator } from '@/lib/batchCoordinators'
 import { isLeadCoordinator } from '@/lib/teacherRoutes'
@@ -31,10 +30,7 @@ export function CoordinatorDashboard() {
   const [domainFilter, setDomainFilter] = useState('')
   const [search, setSearch] = useState('')
 
-  const { data: teams = [], isLoading } = useQuery({
-    queryKey: ['coordinator-teams'],
-    queryFn: fetchAllCoordinatorTeams,
-  })
+  const { data: teams = [], isLoading } = useCoordinatorTeams()
 
   const batches = useMemo(() => teamBatchOptions(teams), [teams])
   const supervisors = useMemo(() => uniqueSorted(teams.map((t) => t.supervisor_name)), [teams])

@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
+import { useCoordinatorTeams } from '@/hooks/useCoordinatorTeams'
 import {
-  fetchAllCoordinatorTeams,
   fetchAllProgressiveReviewMarks,
   fetchAllStudentReviewMarks,
   fetchAllTeamReviews,
@@ -103,10 +103,7 @@ export function ReviewMarksPanel({ exportPrefix = 'review-marks' }: { exportPref
 
   const progressive = isProgressiveReviewSlot(reviewSlot)
 
-  const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ['coordinator-teams'],
-    queryFn: fetchAllCoordinatorTeams,
-  })
+  const { data: teams = [], isLoading: teamsLoading } = useCoordinatorTeams()
   const { data: allReviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ['coordinator-all-team-reviews'],
     queryFn: fetchAllTeamReviews,

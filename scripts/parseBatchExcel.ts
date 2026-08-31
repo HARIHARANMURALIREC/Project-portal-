@@ -82,9 +82,21 @@ export function parseBatchFile(filePath: string, batchId: string): { teams: Pars
     if (blockMembers.length === 0) return
 
     teamNo++
-    const batchCode =
-      blockBatchCode ||
-      `27${batchId}${String(blockTeamNo ?? teamNo).padStart(2, '0')}`
+    const teamNoForCode = blockTeamNo ?? teamNo
+    const canonicalCode = `27${batchId}${String(teamNoForCode).padStart(2, '0')}`
+    let batchCode = blockBatchCode || canonicalCode
+
+    if (batchCode !== canonicalCode) {
+      const codeLetter = batchCode.match(/^27([A-D])/i)?.[1]?.toUpperCase()
+      if (codeLetter !== batchId) {
+        issues.push({
+          file: filePath,
+          row: blockStartRow || endRow,
+          message: `Corrected team code ${batchCode} → ${canonicalCode} for ${batchId} batch`,
+        })
+        batchCode = canonicalCode
+      }
+    }
 
     if (blockMembers.length < 2) {
       issues.push({
@@ -102,7 +114,7 @@ export function parseBatchFile(filePath: string, batchId: string): { teams: Pars
 
     teams.push({
       batch_id: batchId,
-      team_no: blockTeamNo ?? teamNo,
+      team_no: teamNoForCode,
       batch_code: batchCode.toUpperCase(),
       members: blockMembers,
       supervisor_name: blockSupervisor,
@@ -136,7 +148,21 @@ export function parseBatchFile(filePath: string, batchId: string): { teams: Pars
     if (blockMembers.length === 0) {
       blockStartRow = i + 1
       const codeFromRow = batchCodeCol >= 0 ? String(row[batchCodeCol] ?? '').trim() : ''
-      if (codeFromRow) blockBatchCode = codeFromRow.toUpperCase()
+      if (codeFromRow) {
+        const normalized = codeFromRow.toUpperCase()
+        const letter = normalized.match(/^27([A-D])/i)?.[1]?.toUpperCase()
+        if (letter && letter === batchId) {
+          blockBatchCode = normalized
+        } else if (letter && letter !== batchId) {
+          issues.push({
+            file: filePath,
+            row: i + 1,
+            message: `Ignored batch code ${normalized} in ${batchId} file — will use 27${batchId}##`,
+          })
+        } else if (isValidTeamCode(normalized)) {
+          blockBatchCode = normalized
+        }
+      }
       if (snoCol >= 0) {
         const n = Number(row[snoCol])
         if (!Number.isNaN(n) && n > 0) blockTeamNo = n

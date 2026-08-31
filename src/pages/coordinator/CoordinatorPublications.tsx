@@ -1,14 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
 import { CoordinatorPageShell } from '@/components/coordinator/CoordinatorPageShell'
 import { TeamPublicationsOverviewPanel } from '@/components/shared/TeamPublicationsOverviewPanel'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
-import { fetchAllCoordinatorTeams } from '@/lib/coordinatorData'
+import { useCoordinatorTeams } from '@/hooks/useCoordinatorTeams'
 
 export function CoordinatorPublications() {
-  const { data: teams = [], isLoading } = useQuery({
-    queryKey: ['coordinator-teams'],
-    queryFn: fetchAllCoordinatorTeams,
-  })
+  const { data: teams = [], isLoading } = useCoordinatorTeams()
 
   return (
     <CoordinatorPageShell title="Publications" activeNav="publications">

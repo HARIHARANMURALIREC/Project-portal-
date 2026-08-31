@@ -193,9 +193,24 @@ async function main() {
       teamByCode.set(team.batch_code, teamRow)
       teamsCreated++
       console.log(`Created team ${team.batch_code}`)
-    } else if (supervisor && teamRow.supervisor_name !== supervisor) {
-      await supabase.from('teams').update({ supervisor_name: supervisor }).eq('id', teamRow.id)
-      teamsUpdated++
+    } else {
+      const updates: Record<string, unknown> = {}
+      if (teamRow.batch_id !== team.batch_id) updates.batch_id = team.batch_id
+      if (teamRow.team_no !== team.team_no) updates.team_no = team.team_no
+      if (teamRow.batch_code !== team.batch_code) updates.batch_code = team.batch_code
+      if (supervisor && teamRow.supervisor_name !== supervisor) updates.supervisor_name = supervisor
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('teams').update(updates).eq('id', teamRow.id)
+        if (updates.batch_code) {
+          teamByCode.delete(teamRow.batch_code.toUpperCase())
+          teamByCode.set(team.batch_code, { ...teamRow, ...updates })
+        }
+        teamsUpdated++
+        if (updates.batch_code) {
+          console.log(`Updated team code ${teamRow.batch_code} → ${team.batch_code}`)
+        }
+      }
     }
 
     for (const member of team.members) {

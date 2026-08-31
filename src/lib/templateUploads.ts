@@ -124,6 +124,36 @@ export interface TeamTemplateUpload {
   updated_at: string
 }
 
+export type TeamTemplateUploadWithTeam = TeamTemplateUpload & {
+  teams?: {
+    batch_code: string
+    supervisor_name: string | null
+    batch_id: string
+  } | null
+}
+
+const TEAM_CODE_RE = /(?<![a-zA-Z0-9])27([A-D])(\d{2})(?![a-zA-Z0-9])/i
+
+/** Extract a team code (e.g. 27A01) from filenames when team row is not joined. */
+export function extractTeamCodeFromText(text: string): string | null {
+  const match = TEAM_CODE_RE.exec(text)
+  if (!match) return null
+  return `27${match[1].toUpperCase()}${match[2]}`
+}
+
+export function teamLabelFromUpload(
+  upload: TeamTemplateUploadWithTeam,
+  team?: { batch_code: string } | null,
+): string {
+  if (team?.batch_code) return team.batch_code
+  if (upload.teams?.batch_code) return upload.teams.batch_code
+  const fromName = extractTeamCodeFromText(upload.original_filename)
+  if (fromName) return fromName
+  const fromPath = extractTeamCodeFromText(upload.storage_path)
+  if (fromPath) return fromPath
+  return upload.team_id.slice(0, 8)
+}
+
 // ── Coordinator demo files ────────────────────────────────────
 
 export async function fetchCoordinatorTemplates(): Promise<CoordinatorTemplateFile[]> {
@@ -194,13 +224,13 @@ export async function fetchTeamTemplateUploads(teamId: string): Promise<TeamTemp
   return (data ?? []) as TeamTemplateUpload[]
 }
 
-export async function fetchAllTeamTemplateUploads(): Promise<TeamTemplateUpload[]> {
+export async function fetchAllTeamTemplateUploads(): Promise<TeamTemplateUploadWithTeam[]> {
   const { data, error } = await supabase
     .from('team_template_uploads')
-    .select('*')
+    .select('*, teams (batch_code, supervisor_name, batch_id)')
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data ?? []) as TeamTemplateUpload[]
+  return (data ?? []) as TeamTemplateUploadWithTeam[]
 }
 
 export async function uploadTeamTemplate(

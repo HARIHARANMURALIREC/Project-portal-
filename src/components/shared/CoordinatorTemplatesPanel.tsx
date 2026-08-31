@@ -13,8 +13,10 @@ import {
   deleteCoordinatorTemplate,
   fetchAllTeamTemplateUploads,
   getTemplateFileUrl,
+  teamLabelFromUpload,
   type TemplateType,
   type CoordinatorTemplateFile,
+  type TeamTemplateUploadWithTeam,
 } from '@/lib/templateUploads'
 import { fetchAllCoordinatorTeams } from '@/lib/coordinatorData'
 
@@ -184,7 +186,7 @@ export function CoordinatorTemplatesPanel() {
   })
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ['coordinator-teams'],
+    queryKey: ['coordinator-teams', 'portal-all'],
     queryFn: fetchAllCoordinatorTeams,
   })
 
@@ -197,7 +199,7 @@ export function CoordinatorTemplatesPanel() {
 
   // Group uploads by team
   const teamMap = new Map(teams.map((t) => [t.id, t]))
-  const uploadsByTeam = new Map<string, typeof allUploads>()
+  const uploadsByTeam = new Map<string, TeamTemplateUploadWithTeam[]>()
   for (const u of allUploads) {
     const list = uploadsByTeam.get(u.team_id) ?? []
     list.push(u)
@@ -281,6 +283,9 @@ export function CoordinatorTemplatesPanel() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {Array.from(uploadsByTeam.entries()).flatMap(([teamId, uploads]) => {
                   const team = teamMap.get(teamId)
+                  const teamLabel = teamLabelFromUpload(uploads[0], team)
+                  const supervisor =
+                    team?.supervisor_name ?? uploads[0].teams?.supervisor_name ?? '—'
                   return uploads.map((upload, idx) => {
                     const cfg = TEMPLATE_CONFIGS.find((c) => c.type === upload.template_type)
                     return (
@@ -288,10 +293,10 @@ export function CoordinatorTemplatesPanel() {
                         {idx === 0 && (
                           <>
                             <td className="px-4 py-3 font-mono text-xs font-semibold text-violet-700 dark:text-violet-300" rowSpan={uploads.length}>
-                              {team?.batch_code ?? teamId.slice(0, 8)}
+                              {teamLabel}
                             </td>
                             <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300" rowSpan={uploads.length}>
-                              {team?.supervisor_name ?? '—'}
+                              {supervisor}
                             </td>
                           </>
                         )}

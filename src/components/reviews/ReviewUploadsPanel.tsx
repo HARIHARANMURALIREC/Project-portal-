@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
+import { useCoordinatorTeams } from '@/hooks/useCoordinatorTeams'
 import {
   fetchAllCoordinatorTeams,
   fetchAllReviewFiles,
@@ -181,6 +182,7 @@ function TemplateUploadCell({
 
 export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete = false }: { exportPrefix?: string; showDelete?: boolean } = {}) {
   const queryClient = useQueryClient()
+  const coordinatorScoped = exportPrefix.startsWith('coordinator')
   const [batchFilter, setBatchFilter] = useState('')
   const [supervisorFilter, setSupervisorFilter] = useState('')
   const [reviewerFilter, setReviewerFilter] = useState('')
@@ -199,10 +201,16 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
   const invalidateTemplateUploads = () =>
     void queryClient.invalidateQueries({ queryKey: ['all-team-template-uploads'] })
 
-  const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ['coordinator-teams'],
+  const coordinatorTeamsQuery = useCoordinatorTeams()
+  const allTeamsQuery = useQuery({
+    queryKey: ['coordinator-teams', 'all'],
     queryFn: fetchAllCoordinatorTeams,
+    enabled: !coordinatorScoped,
   })
+
+  const { data: teams = [], isLoading: teamsLoading } = coordinatorScoped
+    ? coordinatorTeamsQuery
+    : allTeamsQuery
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ['coordinator-all-reviews'],
     queryFn: fetchAllTeamReviews,

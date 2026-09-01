@@ -7,6 +7,7 @@ import { useStudentContext } from '@/hooks/useStudentContext'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   TEMPLATE_CONFIGS,
+  SECOND_REVIEW_TEMPLATE_CONFIGS,
   templateAcceptLabel,
   fetchCoordinatorTemplates,
   fetchTeamTemplateUploads,
@@ -23,6 +24,9 @@ const TYPE_ICONS: Record<TemplateType, typeof BookOpen> = {
   first_review_ppt: Presentation,
   review_report: FileText,
   journal_papers: Newspaper,
+  second_journal_papers: Newspaper,
+  second_review_report: FileText,
+  second_review_ppt: Presentation,
 }
 
 function StudentTemplateCard({
@@ -271,58 +275,68 @@ export function StudentTemplatesPanel() {
   const demoByType = Object.fromEntries(demoFiles.map((f) => [f.template_type, f]))
   const myUploadByType = Object.fromEntries(myUploads.map((u) => [u.template_type, u]))
 
-  const submittedCount = myUploads.length
-  const totalCount = TEMPLATE_CONFIGS.length
+  const submittedFirst = TEMPLATE_CONFIGS.filter((c) => myUploadByType[c.type]).length
+  const submittedSecond = SECOND_REVIEW_TEMPLATE_CONFIGS.filter((c) => myUploadByType[c.type]).length
 
   if (demosLoading || uploadsLoading) return <TableSkeleton rows={4} />
 
   return (
-    <div className="space-y-6">
-      {/* Progress banner */}
-      <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Submission Progress
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {submittedCount} of {totalCount} documents submitted
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-            <div
-              className="h-full rounded-full bg-violet-600 transition-all"
-              style={{ width: `${(submittedCount / totalCount) * 100}%` }}
-            />
+    <div className="space-y-8">
+      {/* First Review */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">First Review</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {submittedFirst} of {TEMPLATE_CONFIGS.length} documents submitted
+            </p>
           </div>
           <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">
-            {Math.round((submittedCount / totalCount) * 100)}%
+            {Math.round((submittedFirst / TEMPLATE_CONFIGS.length) * 100)}%
           </span>
         </div>
-      </div>
 
-      {/* Notice */}
-      <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/60 dark:bg-amber-950/30">
-        <span className="mt-0.5 text-amber-600 dark:text-amber-400">⚠️</span>
-        <p className="text-sm text-amber-800 dark:text-amber-300">
-          Download the demo file from your coordinator first, use it as a format reference, then upload your completed document.
-          Your submissions will be visible to your supervisor, reviewer, and coordinator.
-        </p>
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {TEMPLATE_CONFIGS.map((cfg) => (
+            <StudentTemplateCard
+              key={cfg.type}
+              config={cfg}
+              demoFile={demoByType[cfg.type]}
+              myUpload={myUploadByType[cfg.type]}
+              teamId={teamId}
+              onChanged={refresh}
+            />
+          ))}
+        </div>
+      </section>
 
-      {/* Cards */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {TEMPLATE_CONFIGS.map((cfg) => (
-          <StudentTemplateCard
-            key={cfg.type}
-            config={cfg}
-            demoFile={demoByType[cfg.type]}
-            myUpload={myUploadByType[cfg.type]}
-            teamId={teamId}
-            onChanged={refresh}
-          />
-        ))}
-      </div>
+      {/* Second Review */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800/60 dark:bg-orange-950/30">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Second Review</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              {submittedSecond} of {SECOND_REVIEW_TEMPLATE_CONFIGS.length} documents submitted — Journal Papers (PPT/PDF), Review Report (PDF), Second Review PPT (PPT)
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">
+            {Math.round((submittedSecond / SECOND_REVIEW_TEMPLATE_CONFIGS.length) * 100)}%
+          </span>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {SECOND_REVIEW_TEMPLATE_CONFIGS.map((cfg) => (
+            <StudentTemplateCard
+              key={cfg.type}
+              config={cfg}
+              demoFile={demoByType[cfg.type]}
+              myUpload={myUploadByType[cfg.type]}
+              teamId={teamId}
+              onChanged={refresh}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

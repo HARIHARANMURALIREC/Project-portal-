@@ -21,6 +21,9 @@ const TYPE_ICONS: Record<TemplateType, typeof BookOpen> = {
   first_review_ppt: Presentation,
   review_report: FileText,
   journal_papers: Newspaper,
+  second_journal_papers: Newspaper,
+  second_review_report: FileText,
+  second_review_ppt: Presentation,
 }
 
 function TeamSubmissionsTable({ teams, allUploads }: { teams: TeamWithDetails[]; allUploads: ReturnType<typeof fetchAllTeamTemplateUploads> extends Promise<infer T> ? T : never[] }) {

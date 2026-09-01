@@ -24,18 +24,67 @@ import { formatReviewSchedule, STANDARD_REVIEW_TITLES } from '@/lib/reviews'
 import { teamBatchOptions, teamMatchesFilters, uniqueSorted } from '@/lib/teamFilters'
 import {
   TEMPLATE_CONFIGS,
+  SECOND_REVIEW_TEMPLATE_CONFIGS,
+  SECOND_REVIEW_UPLOAD_TYPES,
   buildTemplateFilesZip,
   deleteTeamTemplateUpload,
   fetchAllTeamTemplateUploads,
   getTemplateFileUrl,
   type TeamTemplateUpload,
+  type TemplateConfig,
   type TemplateType,
 } from '@/lib/templateUploads'
 import type { TeamReview, TeamReviewFile, TeamWithDetails } from '@/types/database'
 
 const FIRST_REVIEW_TITLE = 'First Review'
+const SECOND_REVIEW_TITLE = 'Second Review'
 const ZEROTH_REVIEW_TITLE = 'Zeroth Review'
 const FIRST_REVIEW_UPLOAD_TYPES = TEMPLATE_CONFIGS.map((c) => c.type)
+
+function buildTemplateReviewRows(
+  teams: TeamWithDetails[],
+  batchFilter: string,
+  supervisorFilter: string,
+  reviewerFilter: string,
+  search: string,
+  uploadFilter: string,
+  uploadsByTeam: Map<string, Map<TemplateType, TeamTemplateUpload>>,
+  reviewByTeam: Map<string, TeamReview>,
+  uploadTypes: TemplateType[],
+) {
+  return teams
+    .filter((team) =>
+      teamMatchesFilters(team, {
+        batchId: batchFilter,
+        supervisor: supervisorFilter,
+        reviewer: reviewerFilter,
+        search,
+      }),
+    )
+    .map((team) => {
+      const byType = uploadsByTeam.get(team.id)
+      const uploads = Object.fromEntries(
+        uploadTypes.map((type) => [type, byType?.get(type) ?? null]),
+      ) as Record<TemplateType, TeamTemplateUpload | null>
+      return {
+        team,
+        review: reviewByTeam.get(team.id) ?? null,
+        uploads,
+      }
+    })
+    .filter(({ review, uploads }) => {
+      if (!uploadFilter) return true
+      const uploadedCount = uploadTypes.filter((t) => uploads[t]).length
+      if (uploadFilter === 'all_uploaded') return uploadedCount === uploadTypes.length
+      if (uploadFilter === 'incomplete') return uploadedCount < uploadTypes.length
+      if (uploadFilter === 'none_scheduled') return review == null
+      if (uploadFilter.startsWith('missing:')) {
+        const type = uploadFilter.slice('missing:'.length) as TemplateType
+        return uploads[type] == null
+      }
+      return true
+    })
+}
 
 function DownloadLink({ file }: { file: TeamReviewFile }) {
   const [busy, setBusy] = useState(false)
@@ -193,8 +242,12 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
   const [zipProgress, setZipProgress] = useState<string | null>(null)
 
   const isFirstReviewView = reviewTitleFilter === FIRST_REVIEW_TITLE
+  const isSecondReviewView = reviewTitleFilter === SECOND_REVIEW_TITLE
+  const isTemplateReviewView = isFirstReviewView || isSecondReviewView
   const isZerothReviewView = reviewTitleFilter === ZEROTH_REVIEW_TITLE
   const hidePptColumn = isZerothReviewView
+  const activeTemplateConfigs = isSecondReviewView ? SECOND_REVIEW_TEMPLATE_CONFIGS : TEMPLATE_CONFIGS
+  const activeUploadTypes = isSecondReviewView ? SECOND_REVIEW_UPLOAD_TYPES : FIRST_REVIEW_UPLOAD_TYPES
 
   const invalidateFiles = () =>
     void queryClient.invalidateQueries({ queryKey: ['coordinator-all-review-files'] })
@@ -287,50 +340,69 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
     return map
   }, [reviews])
 
-  const firstReviewRows = useMemo(() => {
-    return teams
-      .filter((team) =>
-        teamMatchesFilters(team, {
-          batchId: batchFilter,
-          supervisor: supervisorFilter,
-          reviewer: reviewerFilter,
-          search,
-        }),
-      )
-      .map((team) => {
-        const byType = uploadsByTeam.get(team.id)
-        const uploads = Object.fromEntries(
-          FIRST_REVIEW_UPLOAD_TYPES.map((type) => [type, byType?.get(type) ?? null]),
-        ) as Record<TemplateType, TeamTemplateUpload | null>
-        return {
-          team,
-          review: firstReviewByTeam.get(team.id) ?? null,
-          uploads,
-        }
-      })
-      .filter(({ review, uploads }) => {
-        if (!uploadFilter) return true
-        const values = FIRST_REVIEW_UPLOAD_TYPES.map((t) => uploads[t])
-        const uploadedCount = values.filter(Boolean).length
-        if (uploadFilter === 'all_uploaded') return uploadedCount === FIRST_REVIEW_UPLOAD_TYPES.length
-        if (uploadFilter === 'incomplete') return uploadedCount < FIRST_REVIEW_UPLOAD_TYPES.length
-        if (uploadFilter === 'none_scheduled') return review == null
-        if (uploadFilter.startsWith('missing:')) {
-          const type = uploadFilter.slice('missing:'.length) as TemplateType
-          return uploads[type] == null
-        }
-        return true
-      })
-  }, [
-    teams,
-    batchFilter,
-    supervisorFilter,
-    reviewerFilter,
-    search,
-    uploadFilter,
-    uploadsByTeam,
-    firstReviewByTeam,
-  ])
+  const secondReviewByTeam = useMemo(() => {
+    const map = new Map<string, TeamReview>()
+    for (const r of reviews) {
+      if (r.review_title !== SECOND_REVIEW_TITLE) continue
+      const existing = map.get(r.team_id)
+      if (!existing || new Date(r.scheduled_at) < new Date(existing.scheduled_at)) {
+        map.set(r.team_id, r)
+      }
+    }
+    return map
+  }, [reviews])
+
+  const firstReviewRows = useMemo(
+    () =>
+      buildTemplateReviewRows(
+        teams,
+        batchFilter,
+        supervisorFilter,
+        reviewerFilter,
+        search,
+        uploadFilter,
+        uploadsByTeam,
+        firstReviewByTeam,
+        FIRST_REVIEW_UPLOAD_TYPES,
+      ),
+    [
+      teams,
+      batchFilter,
+      supervisorFilter,
+      reviewerFilter,
+      search,
+      uploadFilter,
+      uploadsByTeam,
+      firstReviewByTeam,
+    ],
+  )
+
+  const secondReviewRows = useMemo(
+    () =>
+      buildTemplateReviewRows(
+        teams,
+        batchFilter,
+        supervisorFilter,
+        reviewerFilter,
+        search,
+        uploadFilter,
+        uploadsByTeam,
+        secondReviewByTeam,
+        SECOND_REVIEW_UPLOAD_TYPES,
+      ),
+    [
+      teams,
+      batchFilter,
+      supervisorFilter,
+      reviewerFilter,
+      search,
+      uploadFilter,
+      uploadsByTeam,
+      secondReviewByTeam,
+    ],
+  )
+
+  const templateReviewRows = isSecondReviewView ? secondReviewRows : firstReviewRows
 
   const filtered = useMemo(() => {
     return rows
@@ -373,20 +445,30 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
   }, [rows, batchFilter, supervisorFilter, reviewerFilter, reviewTitleFilter, uploadFilter, search, hidePptColumn])
 
   const stats = useMemo(() => {
-    if (isFirstReviewView) {
-      const counts = Object.fromEntries(FIRST_REVIEW_UPLOAD_TYPES.map((t) => [t, 0])) as Record<
+    if (isTemplateReviewView) {
+      const counts = Object.fromEntries(activeUploadTypes.map((t) => [t, 0])) as Record<
         TemplateType,
         number
       >
       let scheduled = 0
-      for (const row of firstReviewRows) {
+      for (const row of templateReviewRows) {
         if (row.review) scheduled += 1
-        for (const type of FIRST_REVIEW_UPLOAD_TYPES) {
+        for (const type of activeUploadTypes) {
           if (row.uploads[type]) counts[type] += 1
         }
       }
+      if (isSecondReviewView) {
+        return {
+          teams: templateReviewRows.length,
+          scheduled,
+          withPdf: counts.second_review_report,
+          withPpt: counts.second_review_ppt,
+          withReport: counts.second_review_report,
+          withJournal: counts.second_journal_papers,
+        }
+      }
       return {
-        teams: firstReviewRows.length,
+        teams: templateReviewRows.length,
         scheduled,
         withPdf: counts.literature_survey,
         withPpt: counts.first_review_ppt,
@@ -413,7 +495,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
       withReport: 0,
       withJournal: 0,
     }
-  }, [filtered, firstReviewRows, isFirstReviewView])
+  }, [filtered, templateReviewRows, isTemplateReviewView, isSecondReviewView, activeUploadTypes])
 
   const clearFilters = () => {
     setBatchFilter('')
@@ -425,7 +507,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
   }
 
   const zipEntries = useMemo((): ZipReviewFileEntry[] => {
-    if (isFirstReviewView) return []
+    if (isTemplateReviewView) return []
 
     const entries: ZipReviewFileEntry[] = []
     for (const { team, reviews: teamReviews } of filtered) {
@@ -449,37 +531,44 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
       }
     }
     return entries
-  }, [filtered, isFirstReviewView, hidePptColumn])
+  }, [filtered, isTemplateReviewView, hidePptColumn])
 
-  const firstReviewZipCount = useMemo(() => {
-    if (!isFirstReviewView) return 0
+  const templateReviewZipCount = useMemo(() => {
+    if (!isTemplateReviewView) return 0
     let count = 0
-    for (const { uploads } of firstReviewRows) {
-      for (const type of FIRST_REVIEW_UPLOAD_TYPES) {
+    for (const { uploads } of templateReviewRows) {
+      for (const type of activeUploadTypes) {
         if (uploads[type]) count += 1
       }
     }
     return count
-  }, [firstReviewRows, isFirstReviewView])
+  }, [templateReviewRows, isTemplateReviewView, activeUploadTypes])
 
   const exportExcel = () => {
-    if (isFirstReviewView) {
-      const exportRows = firstReviewRows.map(({ team, review, uploads }) => ({
-        'Team ID': team.batch_code,
-        Supervisor: team.supervisor_name ?? '',
-        Reviewer: team.reviewer_name ?? '',
-        'First Review': review
-          ? formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)
-          : 'Not scheduled',
-        'Literature Survey': uploads.literature_survey?.original_filename ?? 'Missing',
-        'First Review PPT': uploads.first_review_ppt?.original_filename ?? 'Missing',
-        'Review Report': uploads.review_report?.original_filename ?? 'Missing',
-        'Journal Papers': uploads.journal_papers?.original_filename ?? 'Missing',
-      }))
+    if (isTemplateReviewView) {
+      const reviewLabel = isSecondReviewView ? 'Second Review' : 'First Review'
+      const exportRows = templateReviewRows.map(({ team, review, uploads }) => {
+        const base = {
+          'Team ID': team.batch_code,
+          Supervisor: team.supervisor_name ?? '',
+          Reviewer: team.reviewer_name ?? '',
+          [reviewLabel]: review
+            ? formatReviewSchedule(review.scheduled_at, review.scheduled_end_at)
+            : 'Not scheduled',
+        }
+        const docCols = Object.fromEntries(
+          activeTemplateConfigs.map((cfg) => [
+            cfg.label,
+            uploads[cfg.type]?.original_filename ?? 'Missing',
+          ]),
+        )
+        return { ...base, ...docCols }
+      })
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), 'First Review')
-      XLSX.writeFile(wb, `${exportPrefix}-first-review-${new Date().toISOString().slice(0, 10)}.xlsx`)
-      toast.success('First Review report downloaded')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), reviewLabel)
+      const slug = isSecondReviewView ? 'second-review' : 'first-review'
+      XLSX.writeFile(wb, `${exportPrefix}-${slug}-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      toast.success(`${reviewLabel} report downloaded`)
       return
     }
 
@@ -520,12 +609,12 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
   }
 
   const downloadZip = () => {
-    if (isFirstReviewView) {
-      const entries = firstReviewRows.flatMap(({ team, uploads }) =>
-        FIRST_REVIEW_UPLOAD_TYPES.flatMap((type) => {
+    if (isTemplateReviewView) {
+      const entries = templateReviewRows.flatMap(({ team, uploads }) =>
+        activeUploadTypes.flatMap((type) => {
           const upload = uploads[type]
           if (!upload) return []
-          const label = TEMPLATE_CONFIGS.find((c) => c.type === type)?.label ?? type
+          const label = activeTemplateConfigs.find((c) => c.type === type)?.label ?? type
           return [
             {
               storage_path: upload.storage_path,
@@ -548,7 +637,8 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
             setZipProgress(`${done} / ${total}`)
           })
           const stamp = new Date().toISOString().slice(0, 10)
-          triggerBlobDownload(blob, `${exportPrefix}-first-review-${stamp}.zip`)
+          const slug = isSecondReviewView ? 'second-review' : 'first-review'
+          triggerBlobDownload(blob, `${exportPrefix}-${slug}-${stamp}.zip`)
           toast.success(`Downloaded ZIP with ${entries.length} file${entries.length === 1 ? '' : 's'}`)
         } catch (err) {
           toast.error(err instanceof Error ? err.message : 'ZIP download failed')
@@ -584,7 +674,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
     })()
   }
 
-  const tableEmpty = isFirstReviewView ? firstReviewRows.length === 0 : filtered.length === 0
+  const tableEmpty = isTemplateReviewView ? templateReviewRows.length === 0 : filtered.length === 0
   const exportDisabled = isLoading || tableEmpty
 
   return (
@@ -592,9 +682,11 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
       <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
         {isFirstReviewView
           ? 'First Review schedule and template uploads (Literature Survey, PPT, Review Report, Journal Papers) for every team.'
-          : hidePptColumn
-            ? 'PDF (abstract) uploads for Zeroth Review. Download individual files, pack filtered uploads as a ZIP, or export status to Excel.'
-            : 'PDF and PPT uploads for every team. Download individual files, pack filtered uploads as a ZIP, or export status to Excel.'}
+          : isSecondReviewView
+            ? 'Second Review schedule and uploads (Journal Papers, Review Report, Second Review PPT) for every team.'
+            : hidePptColumn
+              ? 'PDF (abstract) uploads for Zeroth Review. Download individual files, pack filtered uploads as a ZIP, or export status to Excel.'
+              : 'PDF and PPT uploads for every team. Download individual files, pack filtered uploads as a ZIP, or export status to Excel.'}
       </p>
       <div className="mb-4 flex flex-wrap gap-3">
         <Card padding="sm" className="inline-flex items-center gap-2">
@@ -604,27 +696,50 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
         <Card padding="sm" className="inline-flex items-center gap-2">
           <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.scheduled}</span>
           <span className="text-xs text-slate-500">
-            {isFirstReviewView ? 'first reviews scheduled' : 'scheduled reviews'}
+            {isTemplateReviewView
+              ? isSecondReviewView
+                ? 'second reviews scheduled'
+                : 'first reviews scheduled'
+              : 'scheduled reviews'}
           </span>
         </Card>
-        {isFirstReviewView ? (
+        {isTemplateReviewView ? (
           <>
-            <Card padding="sm" className="inline-flex items-center gap-2 border-rose-100 dark:border-rose-800">
-              <span className="text-lg font-bold text-rose-700 dark:text-rose-300">{stats.withPdf}</span>
-              <span className="text-xs text-rose-700 dark:text-rose-300">Literature Survey</span>
-            </Card>
-            <Card padding="sm" className="inline-flex items-center gap-2 border-orange-100 dark:border-orange-800">
-              <span className="text-lg font-bold text-orange-700 dark:text-orange-300">{stats.withPpt}</span>
-              <span className="text-xs text-orange-700 dark:text-orange-300">First Review PPT</span>
-            </Card>
-            <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800">
-              <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{stats.withReport}</span>
-              <span className="text-xs text-violet-700 dark:text-violet-300">Review Report</span>
-            </Card>
-            <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
-              <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withJournal}</span>
-              <span className="text-xs text-sky-700 dark:text-sky-300">Journal Papers</span>
-            </Card>
+            {isSecondReviewView ? (
+              <>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
+                  <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withJournal}</span>
+                  <span className="text-xs text-sky-700 dark:text-sky-300">Journal Papers</span>
+                </Card>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800">
+                  <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{stats.withReport}</span>
+                  <span className="text-xs text-violet-700 dark:text-violet-300">Review Report</span>
+                </Card>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-orange-100 dark:border-orange-800">
+                  <span className="text-lg font-bold text-orange-700 dark:text-orange-300">{stats.withPpt}</span>
+                  <span className="text-xs text-orange-700 dark:text-orange-300">Second Review PPT</span>
+                </Card>
+              </>
+            ) : (
+              <>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-rose-100 dark:border-rose-800">
+                  <span className="text-lg font-bold text-rose-700 dark:text-rose-300">{stats.withPdf}</span>
+                  <span className="text-xs text-rose-700 dark:text-rose-300">Literature Survey</span>
+                </Card>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-orange-100 dark:border-orange-800">
+                  <span className="text-lg font-bold text-orange-700 dark:text-orange-300">{stats.withPpt}</span>
+                  <span className="text-xs text-orange-700 dark:text-orange-300">First Review PPT</span>
+                </Card>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800">
+                  <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{stats.withReport}</span>
+                  <span className="text-xs text-violet-700 dark:text-violet-300">Review Report</span>
+                </Card>
+                <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
+                  <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withJournal}</span>
+                  <span className="text-xs text-sky-700 dark:text-sky-300">Journal Papers</span>
+                </Card>
+              </>
+            )}
           </>
         ) : (
           <>
@@ -703,6 +818,15 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
                 <option value="missing:journal_papers">Journal Papers missing</option>
                 <option value="none_scheduled">No First Review scheduled</option>
               </>
+            ) : isSecondReviewView ? (
+              <>
+                <option value="all_uploaded">All 3 uploaded</option>
+                <option value="incomplete">Missing any upload</option>
+                <option value="missing:second_journal_papers">Journal Papers missing</option>
+                <option value="missing:second_review_report">Review Report missing</option>
+                <option value="missing:second_review_ppt">Second Review PPT missing</option>
+                <option value="none_scheduled">No Second Review scheduled</option>
+              </>
             ) : hidePptColumn ? (
               <>
                 <option value="pdf_missing">PDF missing</option>
@@ -736,14 +860,14 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
             disabled={
               isLoading ||
               zipBusy ||
-              (isFirstReviewView ? firstReviewZipCount === 0 : zipEntries.length === 0)
+              (isTemplateReviewView ? templateReviewZipCount === 0 : zipEntries.length === 0)
             }
             className="gap-1.5"
           >
             <FileArchive className="h-4 w-4" />
             {zipBusy
               ? `Zipping ${zipProgress ?? ''}…`
-              : `Download ZIP (${isFirstReviewView ? firstReviewZipCount : zipEntries.length})`}
+              : `Download ZIP (${isTemplateReviewView ? templateReviewZipCount : zipEntries.length})`}
           </Button>
           <Button onClick={exportExcel} disabled={exportDisabled}>
             Export Excel
@@ -753,11 +877,14 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
 
       {isLoading ? (
         <TableSkeleton rows={10} />
-      ) : isFirstReviewView ? (
-        <FirstReviewUploadsTable
-          rows={firstReviewRows}
+      ) : isTemplateReviewView ? (
+        <TemplateReviewUploadsTable
+          rows={templateReviewRows}
           showDelete={showDelete}
           onDeleted={invalidateTemplateUploads}
+          reviewColumnLabel={isSecondReviewView ? 'Second Review' : 'First Review'}
+          uploadConfigs={activeTemplateConfigs}
+          uploadTypes={activeUploadTypes}
         />
       ) : (
         <Card padding="none" className="overflow-hidden">
@@ -865,10 +992,13 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
   )
 }
 
-function FirstReviewUploadsTable({
+function TemplateReviewUploadsTable({
   rows,
   showDelete,
   onDeleted,
+  reviewColumnLabel,
+  uploadConfigs,
+  uploadTypes,
 }: {
   rows: {
     team: TeamWithDetails
@@ -877,6 +1007,9 @@ function FirstReviewUploadsTable({
   }[]
   showDelete: boolean
   onDeleted: () => void
+  reviewColumnLabel: string
+  uploadConfigs: TemplateConfig[]
+  uploadTypes: TemplateType[]
 }) {
   return (
     <Card padding="none" className="overflow-hidden">
@@ -894,14 +1027,14 @@ function FirstReviewUploadsTable({
                 Reviewer
               </th>
               <th className="px-4 py-3" rowSpan={2}>
-                First Review
+                {reviewColumnLabel}
               </th>
-              <th className="px-4 py-2 text-center" colSpan={TEMPLATE_CONFIGS.length}>
+              <th className="px-4 py-2 text-center" colSpan={uploadConfigs.length}>
                 Uploads
               </th>
             </tr>
             <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {TEMPLATE_CONFIGS.map((cfg) => (
+              {uploadConfigs.map((cfg) => (
                 <th key={cfg.type} className="px-4 py-2 font-semibold normal-case tracking-normal">
                   {cfg.label}
                 </th>
@@ -912,7 +1045,7 @@ function FirstReviewUploadsTable({
             {rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={4 + TEMPLATE_CONFIGS.length}
+                  colSpan={4 + uploadConfigs.length}
                   className="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
                 >
                   No teams match these filters.
@@ -938,7 +1071,7 @@ function FirstReviewUploadsTable({
                       <span className="text-xs font-medium text-slate-500">Not scheduled</span>
                     )}
                   </td>
-                  {FIRST_REVIEW_UPLOAD_TYPES.map((type) => (
+                  {uploadTypes.map((type) => (
                     <td key={type} className="px-4 py-3">
                       <TemplateUploadCell
                         upload={uploads[type]}

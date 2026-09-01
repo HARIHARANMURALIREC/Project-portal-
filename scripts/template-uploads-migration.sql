@@ -23,8 +23,7 @@ create policy "Authenticated delete template submissions"
 -- 3. Coordinator demo files (coordinator uploads these; students download)
 create table if not exists public.coordinator_template_files (
   id           uuid primary key default gen_random_uuid(),
-  template_type text not null unique
-    check (template_type in ('literature_survey','first_review_ppt','review_report','journal_papers')),
+  template_type text not null unique,
   storage_path      text not null,
   original_filename text not null,
   uploaded_by  uuid not null references auth.users(id),
@@ -41,8 +40,7 @@ create policy "All auth manage coordinator templates"
 create table if not exists public.team_template_uploads (
   id           uuid primary key default gen_random_uuid(),
   team_id      uuid not null references public.teams(id) on delete cascade,
-  template_type text not null
-    check (template_type in ('literature_survey','first_review_ppt','review_report','journal_papers')),
+  template_type text not null,
   storage_path      text not null,
   original_filename text not null,
   uploaded_by  uuid not null references auth.users(id),
@@ -50,6 +48,40 @@ create table if not exists public.team_template_uploads (
   updated_at   timestamptz not null default now(),
   unique (team_id, template_type)
 );
+
+alter table public.team_template_uploads
+  drop constraint if exists team_template_uploads_template_type_check;
+
+alter table public.team_template_uploads
+  add constraint team_template_uploads_template_type_check
+  check (
+    template_type in (
+      'literature_survey',
+      'first_review_ppt',
+      'review_report',
+      'journal_papers',
+      'second_journal_papers',
+      'second_review_report',
+      'second_review_ppt'
+    )
+  );
+
+alter table public.coordinator_template_files
+  drop constraint if exists coordinator_template_files_template_type_check;
+
+alter table public.coordinator_template_files
+  add constraint coordinator_template_files_template_type_check
+  check (
+    template_type in (
+      'literature_survey',
+      'first_review_ppt',
+      'review_report',
+      'journal_papers',
+      'second_journal_papers',
+      'second_review_report',
+      'second_review_ppt'
+    )
+  );
 alter table public.team_template_uploads enable row level security;
 create policy "All auth read team template uploads"
   on public.team_template_uploads for select to authenticated using (true);

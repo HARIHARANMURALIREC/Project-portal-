@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { TableSkeleton } from '@/components/LoadingSkeleton'
 import {
   TEMPLATE_CONFIGS,
+  ALL_TEMPLATE_CONFIGS,
   templateAcceptLabel,
   fetchCoordinatorTemplates,
   uploadCoordinatorTemplate,
@@ -25,6 +26,9 @@ const TYPE_ICONS: Record<TemplateType, typeof BookOpen> = {
   first_review_ppt: Presentation,
   review_report: FileText,
   journal_papers: Newspaper,
+  second_journal_papers: Newspaper,
+  second_review_report: FileText,
+  second_review_ppt: Presentation,
 }
 
 function CoordinatorTemplateCard({
@@ -287,7 +291,7 @@ export function CoordinatorTemplatesPanel() {
                   const supervisor =
                     team?.supervisor_name ?? uploads[0].teams?.supervisor_name ?? '—'
                   return uploads.map((upload, idx) => {
-                    const cfg = TEMPLATE_CONFIGS.find((c) => c.type === upload.template_type)
+                    const cfg = ALL_TEMPLATE_CONFIGS.find((c) => c.type === upload.template_type)
                     return (
                       <tr key={upload.id} className="bg-white dark:bg-app-surface">
                         {idx === 0 && (

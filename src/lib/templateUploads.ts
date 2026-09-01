@@ -7,6 +7,9 @@ export type TemplateType =
   | 'first_review_ppt'
   | 'review_report'
   | 'journal_papers'
+  | 'second_journal_papers'
+  | 'second_review_report'
+  | 'second_review_ppt'
 
 export interface TemplateConfig {
   type: TemplateType
@@ -19,6 +22,21 @@ export interface TemplateConfig {
   badgeColor: string
   badge: string
 }
+
+/** PowerPoint only. */
+export const TEMPLATE_ACCEPT_PPT =
+  [
+    '.ppt',
+    '.pptx',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ].join(',')
+
+/** PDF only. */
+export const TEMPLATE_ACCEPT_PDF = ['.pdf', 'application/pdf'].join(',')
+
+/** PowerPoint and PDF (no Word). */
+export const TEMPLATE_ACCEPT_PPT_PDF = [TEMPLATE_ACCEPT_PPT, TEMPLATE_ACCEPT_PDF].join(',')
 
 /** PowerPoint and Word only (e.g. First Review PPT). */
 export const TEMPLATE_ACCEPT_PPT_WORD =
@@ -95,10 +113,77 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
   },
 ]
 
+/** Second Review student uploads (separate from First Review files). */
+export const SECOND_REVIEW_TEMPLATE_CONFIGS: TemplateConfig[] = [
+  {
+    type: 'second_journal_papers',
+    label: 'Journal Papers',
+    description: 'IEEE / Scopus / SCI papers — PowerPoint or PDF.',
+    accept: TEMPLATE_ACCEPT_PPT_PDF,
+    iconBg: 'bg-sky-50 dark:bg-sky-950/40',
+    iconColor: 'text-sky-600 dark:text-sky-400',
+    borderColor: 'border-sky-100 dark:border-sky-800/50',
+    badgeColor:
+      'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/60 dark:text-sky-300 dark:ring-sky-800',
+    badge: 'Required',
+  },
+  {
+    type: 'second_review_report',
+    label: 'Review Report',
+    description: 'Formal second review report — PDF only.',
+    accept: TEMPLATE_ACCEPT_PDF,
+    iconBg: 'bg-violet-50 dark:bg-violet-950/40',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+    borderColor: 'border-violet-100 dark:border-violet-800/50',
+    badgeColor:
+      'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/60 dark:text-violet-300 dark:ring-violet-800',
+    badge: 'Required',
+  },
+  {
+    type: 'second_review_ppt',
+    label: 'Second Review PPT',
+    description: 'Presentation for the second review — PowerPoint only.',
+    accept: TEMPLATE_ACCEPT_PPT,
+    iconBg: 'bg-orange-50 dark:bg-orange-950/40',
+    iconColor: 'text-orange-600 dark:text-orange-400',
+    borderColor: 'border-orange-100 dark:border-orange-800/50',
+    badgeColor:
+      'bg-orange-50 text-orange-700 ring-orange-100 dark:bg-orange-950/60 dark:text-orange-300 dark:ring-orange-800',
+    badge: 'Required',
+  },
+]
+
+export const SECOND_REVIEW_UPLOAD_TYPES = SECOND_REVIEW_TEMPLATE_CONFIGS.map((c) => c.type)
+
+export const ALL_TEMPLATE_CONFIGS: TemplateConfig[] = [
+  ...TEMPLATE_CONFIGS,
+  ...SECOND_REVIEW_TEMPLATE_CONFIGS,
+]
+
 export function templateAcceptLabel(accept: string): string {
-  return accept.includes('.pdf') || accept.includes('application/pdf')
-    ? 'PPT / Word / PDF'
-    : 'PPT / Word'
+  const hasPdf = accept.includes('.pdf')
+  const hasPpt = accept.includes('.ppt')
+  const hasWord = accept.includes('.doc')
+  if (hasPdf && hasPpt && hasWord) return 'PPT / Word / PDF'
+  if (hasPdf && hasPpt) return 'PPT / PDF'
+  if (hasPdf && !hasPpt) return 'PDF'
+  if (hasPpt && !hasPdf) return 'PPT'
+  return 'PPT / Word'
+}
+
+function fileMatchesAccept(file: File, accept: string): boolean {
+  const parts = accept.split(',').map((p) => p.trim().toLowerCase())
+  const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '')
+  const mime = file.type.toLowerCase()
+  return parts.some((p) => p === ext || p === mime)
+}
+
+export function validateTemplateFile(file: File, templateType: TemplateType): void {
+  const config = ALL_TEMPLATE_CONFIGS.find((c) => c.type === templateType)
+  if (!config) return
+  if (!fileMatchesAccept(file, config.accept)) {
+    throw new Error(`Invalid file type. Allowed: ${templateAcceptLabel(config.accept)}`)
+  }
 }
 
 // ── Types ────────────────────────────────────────────────────
@@ -239,6 +324,7 @@ export async function uploadTeamTemplate(
   teamId: string,
   userId: string,
 ): Promise<TeamTemplateUpload> {
+  validateTemplateFile(file, templateType)
   const ext = file.name.split('.').pop() ?? 'bin'
   const path = `teams/${teamId}/${templateType}.${ext}`
 

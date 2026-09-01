@@ -683,7 +683,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
         {isFirstReviewView
           ? 'First Review schedule and template uploads (Literature Survey, PPT, Review Report, Journal Papers) for every team.'
           : isSecondReviewView
-            ? 'Second Review schedule and uploads (Journal Papers, Review Report, Second Review PPT) for every team.'
+            ? 'Second Review schedule and uploads (Conference Paper / Journal Papers, Review Report, Second Review PPT) for every team.'
             : hidePptColumn
               ? 'PDF (abstract) uploads for Zeroth Review. Download individual files, pack filtered uploads as a ZIP, or export status to Excel.'
               : 'PDF and PPT uploads for every team. Download individual files, pack filtered uploads as a ZIP, or export status to Excel.'}
@@ -709,7 +709,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
               <>
                 <Card padding="sm" className="inline-flex items-center gap-2 border-sky-100 dark:border-sky-800">
                   <span className="text-lg font-bold text-sky-700 dark:text-sky-300">{stats.withJournal}</span>
-                  <span className="text-xs text-sky-700 dark:text-sky-300">Journal Papers</span>
+                  <span className="text-xs text-sky-700 dark:text-sky-300">Conference / Journal Papers</span>
                 </Card>
                 <Card padding="sm" className="inline-flex items-center gap-2 border-violet-100 dark:border-violet-800">
                   <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{stats.withReport}</span>
@@ -822,7 +822,7 @@ export function ReviewUploadsPanel({ exportPrefix = 'review-uploads', showDelete
               <>
                 <option value="all_uploaded">All 3 uploaded</option>
                 <option value="incomplete">Missing any upload</option>
-                <option value="missing:second_journal_papers">Journal Papers missing</option>
+                <option value="missing:second_journal_papers">Conference / Journal Papers missing</option>
                 <option value="missing:second_review_report">Review Report missing</option>
                 <option value="missing:second_review_ppt">Second Review PPT missing</option>
                 <option value="none_scheduled">No Second Review scheduled</option>

@@ -316,7 +316,7 @@ export function StudentTemplatesPanel() {
           <div className="flex-1">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Second Review</p>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              {submittedSecond} of {SECOND_REVIEW_TEMPLATE_CONFIGS.length} documents submitted — Journal Papers (PPT/PDF), Review Report (PDF), Second Review PPT (PPT)
+              {submittedSecond} of {SECOND_REVIEW_TEMPLATE_CONFIGS.length} documents submitted — Conference Paper / Journal Papers (PPT/PDF), Review Report (PDF), Second Review PPT (PPT)
             </p>
           </div>
           <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">

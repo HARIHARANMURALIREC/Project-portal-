@@ -117,8 +117,8 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
 export const SECOND_REVIEW_TEMPLATE_CONFIGS: TemplateConfig[] = [
   {
     type: 'second_journal_papers',
-    label: 'Journal Papers',
-    description: 'IEEE / Scopus / SCI papers — PowerPoint or PDF.',
+    label: 'Conference Paper / Journal Papers',
+    description: 'Conference or journal papers — PowerPoint or PDF.',
     accept: TEMPLATE_ACCEPT_PPT_PDF,
     iconBg: 'bg-sky-50 dark:bg-sky-950/40',
     iconColor: 'text-sky-600 dark:text-sky-400',

@@ -14,10 +14,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const DEFAULT_PASSWORD = process.env.TEACHER_DEFAULT_PASSWORD ?? 'Portal@2026'
 
-const OLD_NAME = 'Dr.K.L. Shunmuganathan'
-const OLD_EMAIL = 'dean.it@rajalakshmi.edu.in'
-const NEW_NAME = 'Mr.S.Swamynathan'
-const NEW_EMAIL = 'swamynathan.s@rajalakshmi.edu.in'
+const OLD_NAME = 'Mr.S.Swamynathan'
+const OLD_EMAIL = 'swamynathan.s@rajalakshmi.edu.in'
+const NEW_NAME = 'Dr.K.L. Shunmuganathan'
+const NEW_EMAIL = 'dean.it@rajalakshmi.edu.in'
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run')
